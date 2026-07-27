@@ -125,6 +125,11 @@ class ToolCribRetriever:
 
         Returns dict with keys: "primary", "candidates", "rejected_count", "stats"
         """
+        from retrieval_engine import detect_query_intent
+        intent = detect_query_intent(query)
+        if intent == "aggregation":
+            top_k = 100
+
         raw_result = search_query(
             self.collection, self.embeddings, query, top_k
         )

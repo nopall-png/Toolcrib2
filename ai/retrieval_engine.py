@@ -637,6 +637,8 @@ def detect_query_intent(query: str) -> str:
         return "purchase"
     if any(kw in query_lower for kw in ["where", "location", "stored", "rack", "bin", "warehouse", "located"]):
         return "location"
+    if any(kw in query_lower for kw in ["how many", "all items", "list all", "berapa", "semua barang", "apa saja", "hitung", "total"]):
+        return "aggregation"
     return "description"
 
 
@@ -729,9 +731,10 @@ def _clean_noise_text(text: str) -> str:
     """
     Remove development-only text or ingestion notes from the chunk text.
     """
-    # Matches the noise phrase with optional leading/trailing spaces/punctuation
-    pattern = r'\s*,?\s*chunking agar ChromaDB dapat mengembalikan nilai sku kepada backend\s*\.?\s*'
-    return re.sub(pattern, ' ', text).strip()
+    # Remove specific hallucinated phrases or leaked PDF developer instructions
+    text = re.sub(r'Metadata SKU harus dipertahankan.*?(\.|$)', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'chunking agar ChromaDB.*', '', text, flags=re.IGNORECASE)
+    return text.strip()
 
 
 def _merge_sku_chunks(chunks: list, intent: str = "general") -> dict:
