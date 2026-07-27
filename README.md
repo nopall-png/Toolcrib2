@@ -1,36 +1,43 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Toolcrib Management System - PT Mattel Indonesia
 
-## Getting Started
+Sistem Manajemen Toolcrib dan Pengadaan Perkakas (*Requisition & Procurement System*) berbasis Next.js, React, Tailwind CSS, dan Zustand.
 
-First, run the development server:
+---
 
+## 📄 Product Requirements & Design System (PRD)
+Dokumentasi lengkap mengenai **Design System (UI/UX), Anti-AI Slop Rules, Cara Kerja Sistem (*System Workflow*), dan Arsitektur Kode** dapat diakses pada file:
+👉 **[PRD & Design System (prd.md)](./prd.md)**
+
+---
+
+## 🛠️ Fitur Utama & Peran Pengguna (User Roles)
+1. **User (Peminjam Alat)**: Katalog perkakas, keranjang request, dan pelacakan status peminjaman secara *real-time*.
+2. **Staff Toolcrib**: Dashboard overview, manajemen Master Data Tools, persetujuan (ACC/Tolak) peminjaman user, dan pengajuan pembelian barang (*Purchase Request*) ke Procurement.
+3. **Staff Procurement**: Panel verifikasi dan persetujuan PO (*Approval*), pemesanan ke vendor, serta penerimaan & *restock* stok master data secara otomatis.
+
+---
+
+## 📁 Struktur Folder Utama
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+src/
+├── components/
+│   ├── layout/          # Sidebar & Navigasi Utama
+│   ├── staff/
+│   │   └── toolcrib/    # Modul Staff Toolcrib (Master Data, User Requests, Dashboard, Add Tool)
+│   │       └── procurement/ # Requisition, Purchase History, & Approval Panels
+│   └── user/            # Modul User/Peminjam (Catalog, Cart Drawer, Request History)
+└── lib/
+    ├── mock.ts          # PostgreSQL Schemas & Mock Data
+    └── store.tsx        # Zustand Global State Manager
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🚀 Jalankan Aplikasi secara Lokal
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+# Jalankan server pengembang (Development Server)
+npm run dev
+```
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Buka [http://localhost:3000](http://localhost:3000) pada browser Anda.
