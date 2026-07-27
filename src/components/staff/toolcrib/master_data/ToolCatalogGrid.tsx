@@ -12,7 +12,7 @@ interface ToolCatalogGridProps {
 export const ToolCatalogGrid: React.FC<ToolCatalogGridProps> = ({ tools, onSelectTool }) => {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-      {tools.map((tool) => (
+      {tools.map((tool, index) => (
         <div
           key={tool.id}
           onClick={() => onSelectTool(tool)}
@@ -20,11 +20,16 @@ export const ToolCatalogGrid: React.FC<ToolCatalogGridProps> = ({ tools, onSelec
         >
           <div>
             <div className="flex items-start justify-between gap-3 mb-3">
-              <img
-                src={tool.imageUrl}
-                alt={tool.name}
-                className="w-14 h-14 rounded-xl object-cover border border-slate-200 shrink-0 group-hover:scale-105 transition-transform"
-              />
+              <div className="flex items-center gap-3">
+                <span className="flex items-center justify-center w-6 h-6 rounded-md bg-slate-100 text-slate-500 font-bold text-xs shrink-0">
+                  {index + 1}
+                </span>
+                <img
+                  src={tool.imageUrl}
+                  alt={tool.name}
+                  className="w-14 h-14 rounded-xl object-cover border border-slate-200 shrink-0 group-hover:scale-105 transition-transform"
+                />
+              </div>
               <div className="flex flex-col items-end">
                 <span className="font-mono text-[11px] font-bold text-red-600 bg-red-50 border border-red-200 px-2.5 py-1 rounded-lg">
                   {tool.code}

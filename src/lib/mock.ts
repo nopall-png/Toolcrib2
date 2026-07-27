@@ -102,6 +102,13 @@ export interface Approver {
   department: string;
 }
 
+export interface AppUser {
+  id: string;
+  name: string;
+  employeeId: string;
+  departmentId: string;
+}
+
 // Initial Mock Data (PostgreSQL seed equivalents)
 
 export const INITIAL_APPROVERS: Approver[] = [
@@ -118,6 +125,14 @@ export const INITIAL_DEPARTMENTS: Department[] = [
   { id: 'dept-3', code: 'QC', name: 'Quality Control & Lab', passwordHash: 'user123' },
   { id: 'dept-4', code: 'LOG', name: 'Logistics & Warehouse', passwordHash: 'user123' },
   { id: 'dept-5', code: 'TOOL', name: 'Tooling & Die Repair', passwordHash: 'user123' },
+];
+
+export const INITIAL_USERS: AppUser[] = [
+  { id: 'usr-1', name: 'Budi Santoso', employeeId: 'EMP-001', departmentId: 'dept-1' },
+  { id: 'usr-2', name: 'Siti Aminah', employeeId: 'EMP-002', departmentId: 'dept-1' },
+  { id: 'usr-3', name: 'Riko Fernando', employeeId: 'EMP-003', departmentId: 'dept-2' },
+  { id: 'usr-4', name: 'Joko Anwar', employeeId: 'EMP-004', departmentId: 'dept-2' },
+  { id: 'usr-5', name: 'Nina Wati', employeeId: 'EMP-005', departmentId: 'dept-3' },
 ];
 
 export const INITIAL_TOOLS: ToolItem[] = [

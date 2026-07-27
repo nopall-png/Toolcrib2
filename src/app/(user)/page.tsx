@@ -26,12 +26,12 @@ export default function HomePage() {
       {/* Brand Header */}
       <header className="max-w-6xl w-full mx-auto flex items-center justify-between pb-6 border-b border-slate-200/80">
         <div className="flex items-center space-x-3">
-          <div className="w-11 h-11 rounded-2xl bg-red-600 text-white flex items-center justify-center font-black text-2xl shadow-lg shadow-red-600/30">
-            TC
-          </div>
-          <div>
-            <h1 className="font-black text-slate-900 text-xl tracking-tight">TOOLCRIB SYSTEM</h1>
-            <p className="text-xs text-red-600 font-bold tracking-wider uppercase">PT Mattel Indonesia</p>
+          <div className="flex items-center space-x-3">
+            <img src="/logo/logo1.png" alt="Toolcrib Logo" className="w-12 h-12 object-contain" />
+            <div>
+              <h1 className="font-black text-slate-900 text-xl tracking-tight">TOOLCRIB SYSTEM</h1>
+              <p className="text-xs text-red-600 font-bold tracking-wider uppercase">PT Mattel Indonesia</p>
+            </div>
           </div>
         </div>
 
