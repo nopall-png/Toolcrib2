@@ -81,10 +81,10 @@ Your role:
 - Answer technician questions about tools, spare parts, and inventory.
 - Always reference the SKU (Stock Keeping Unit) code in your answer.
 - Be specific about technical specifications.
-- If the context does not contain the answer, say "I don't have information about that in the ToolCrib database."
+- If the context does not contain the answer, say "Saya tidak memiliki informasi tersebut di database ToolCrib."
 
 CONSTRAINTS:
-- You must respond in English ONLY. If the technician asks in Indonesian or any other language, you must understand their question but ALWAYS generate your complete answer in English.
+- You must respond in Bahasa Indonesia by default. However, if the technician asks their question in English, you must respond entirely in English.
 
 CONTEXT FROM TOOLCRIB DATABASE:
 {context}
@@ -95,8 +95,9 @@ TECHNICIAN QUESTION:
 INSTRUCTIONS:
 1. Answer the question based ONLY on the context provided above.
 2. Include the relevant SKU code(s) in your answer.
-3. Be concise but technically accurate.
-4. If multiple items are relevant, list all of them with their SKUs.
+3. Be friendly, polite, and highly interactive. Talk like a helpful human assistant.
+4. If multiple items are relevant, list all of them with their SKUs clearly.
+5. Use emojis naturally to make the conversation less monotonous and more engaging.
 
 ANSWER:"""
 
@@ -266,24 +267,24 @@ class ToolCribRAG:
 
         if any(hq in q_clean for hq in help_queries) or q_clean == "help":
             answer = (
-                "I can assist you with the following types of queries regarding the ToolCrib inventory:\n\n"
-                "🔍 **1. Exact SKU Search**\n"
-                "Type the exact SKU code to get all information instantly:\n"
-                "- *BRG-MEA-097* or *BRG-ELC-010*\n\n"
-                "📍 **2. Location Lookup**\n"
-                "Find out exactly where items are stored:\n"
-                "- *'Where is the digital vernier caliper?'*\n"
-                "- *'Which items are stored in Rack R-2?'*\n\n"
-                "⚙️ **3. Technical Specifications**\n"
-                "Check the dimensions, brand, model, or capabilities of a tool:\n"
-                "- *'Show me bearing specifications'* or *'Pneumatic cylinder model details'*\n\n"
-                "📅 **4. Calibration & Inspection Status**\n"
-                "Find out when a tool needs its next verification:\n"
-                "- *'Which items need calibration?'* or *'What is the inspection history for BRG-MEA-097?'*\n\n"
-                "💰 **5. Purchase & Cost Logs**\n"
-                "Check unit prices and total values:\n"
-                "- *'What is the price of the digital vernier caliper?'*\n\n"
-                "Simply type your question, and I will search the database!"
+                "Saya dapat membantu Anda mencari berbagai macam informasi mengenai inventaris ToolCrib:\n\n"
+                "🔍 **1. Pencarian Kode SKU**\n"
+                "Ketik kode SKU untuk mendapatkan informasi lengkap secara instan:\n"
+                "- *BRG-MEA-097* atau *BRG-ELC-010*\n\n"
+                "📍 **2. Pencarian Lokasi**\n"
+                "Cari tahu di rak mana barang disimpan:\n"
+                "- *'Di mana letak digital vernier caliper?'*\n"
+                "- *'Barang apa saja yang ada di Rak R-2?'*\n\n"
+                "⚙️ **3. Spesifikasi Teknis**\n"
+                "Cek dimensi, merek, model, atau kapasitas alat:\n"
+                "- *'Tampilkan spesifikasi bearing'* atau *'Detail model pneumatic cylinder'*\n\n"
+                "📅 **4. Status Kalibrasi & Inspeksi**\n"
+                "Cari tahu kapan jadwal kalibrasi alat selanjutnya:\n"
+                "- *'Barang apa yang butuh kalibrasi?'* atau *'Bagaimana riwayat inspeksi BRG-MEA-097?'*\n\n"
+                "💰 **5. Harga & Data Pembelian**\n"
+                "Cek harga satuan dan total nilai aset:\n"
+                "- *'Berapa harga digital vernier caliper?'*\n\n"
+                "Ketik saja pertanyaan Anda, dan saya akan mencarinya di database!"
             )
             return {
                 "answer": answer,
@@ -325,10 +326,25 @@ class ToolCribRAG:
                 "stats": stats
             }
 
+        # Intercept general capability questions/greetings
+        query_lower = question.lower()
+        greetings = ["apa saja", "what can you", "halo", "hi", "hello", "pertanyaan seperti", "what kind", "bisa bantu", "help"]
+        if any(g in query_lower for g in greetings) and not primary and not has_session_doc:
+            intro_msg = "Halo! Saya adalah ToolCrib AI Copilot. Saya bisa membantu Anda mencari informasi mengenai stok barang, spesifikasi suku cadang (SKU), dan inventaris di PT Mattel Indonesia berdasarkan data database ToolCrib. Anda juga bisa mengunggah dokumen PDF (seperti PR) untuk saya baca. Ada spesifikasi atau barang tertentu yang ingin dicari?"
+            return {
+                "answer": intro_msg,
+                "sku": None,
+                "confidence": "HIGH",
+                "merged_fields": None,
+                "source_chunks": [],
+                "candidate_chunks": [],
+                "stats": stats if stats else {}
+            }
+
         # Handle Case: generic no results
         if not primary and not has_session_doc:
             return {
-                "answer": "The inventory does not contain this information.",
+                "answer": "Saya tidak memiliki informasi tersebut di database ToolCrib.",
                 "sku": None,
                 "confidence": None,
                 "merged_fields": None,
@@ -480,7 +496,7 @@ class ToolCribRAG:
         without LLM by parsing and merging the retrieved chunks.
         """
         if not primary:
-            return "The inventory does not contain this information."
+            return "Saya tidak memiliki informasi tersebut di database ToolCrib."
 
         query_lower = question.lower()
 

@@ -903,7 +903,7 @@ def _generate_structured_answer(fields: dict, query: str, sku: str) -> str:
     Generate a clean natural language answer based on the merged fields, query, and SKU.
     """
     if not fields or fields.get("item_name") == "N/A":
-        return "The inventory does not contain this information."
+        return "Saya tidak memiliki informasi tersebut di database ToolCrib."
 
     item = fields.get("item_name", "Unknown Item")
     brand = fields.get("brand", "N/A")
