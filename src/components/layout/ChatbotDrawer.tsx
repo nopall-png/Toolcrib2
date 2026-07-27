@@ -96,7 +96,7 @@ export default function ChatbotDrawer({ isOpen, onClose, user }: ChatbotDrawerPr
         const formData = new FormData();
         formData.append("file", fileToSend);
 
-        const uploadRes = await fetch("http://localhost:8001/api/upload", {
+        const uploadRes = await fetch("http://localhost:8000/api/upload", {
           method: "POST",
           body: formData,
         });
@@ -144,7 +144,7 @@ export default function ChatbotDrawer({ isOpen, onClose, user }: ChatbotDrawerPr
     // 2. Process Chat Query if caption/text is present
     if (captionToSend) {
       try {
-        const response = await fetch("http://localhost:8001/api/chat", {
+        const response = await fetch("http://localhost:8000/api/chat", {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
@@ -261,26 +261,26 @@ export default function ChatbotDrawer({ isOpen, onClose, user }: ChatbotDrawerPr
             <div className="my-auto flex flex-col justify-end items-start gap-6 pb-4">
               <div className="space-y-1">
                 <div className="text-red-600 text-2xl font-black font-sans tracking-tight leading-tight">
-                  Hello, {displayName}
+                  Halo, {displayName}
                 </div>
                 <div className="text-slate-500 text-2xl font-medium font-sans tracking-tight leading-tight">
-                  What can I help ?
+                  Ada yang bisa saya bantu?
                 </div>
               </div>
 
               {/* Suggestions chips */}
               <div className="flex flex-col gap-2.5 w-full">
                 <button
-                  onClick={() => handleSendMessage("What we can do ?")}
+                  onClick={() => handleSendMessage("Apa saja yang bisa kamu lakukan?")}
                   className="w-fit text-left px-4 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-[11px] font-sans font-medium rounded-full transition-colors cursor-pointer max-w-[240px] shadow-xs"
                 >
-                  What we can do ?
+                  Apa saja yang bisa kamu lakukan?
                 </button>
                 <button
-                  onClick={() => handleSendMessage("What kind of question you can ask ?")}
+                  onClick={() => handleSendMessage("Pertanyaan seperti apa yang bisa saya tanyakan?")}
                   className="w-fit text-left px-4 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-[11px] font-sans font-medium rounded-full transition-colors cursor-pointer max-w-[260px] shadow-xs"
                 >
-                  What kind of question you can ask ?
+                  Pertanyaan seperti apa yang bisa saya tanyakan?
                 </button>
               </div>
             </div>
@@ -335,7 +335,7 @@ export default function ChatbotDrawer({ isOpen, onClose, user }: ChatbotDrawerPr
             )}
 
             <textarea
-              placeholder="Type message here..."
+              placeholder="Ketik pesan di sini..."
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={handleKeyDown}
