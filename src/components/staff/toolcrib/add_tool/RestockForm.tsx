@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAppStore } from '@/src/lib/store';
 import { RestockItemState } from './types';
-import { RefreshCw, Plus, Trash2, CheckCircle2, AlertCircle, Search, ChevronDown, X } from 'lucide-react';
+import { RefreshCw, Plus, Trash2, CheckCircle2, AlertCircle, Search, ChevronDown, X, Upload, Loader2, Sparkles } from 'lucide-react';
 
 interface RestockFormProps {
   onSuccess: () => void;
@@ -17,6 +17,11 @@ export const RestockForm: React.FC<RestockFormProps> = ({ onSuccess }) => {
   ]);
   const [activeRestockIndex, setActiveRestockIndex] = useState<number>(0);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [successAutoFill, setSuccessAutoFill] = useState<string | null>(null);
+
+  // Auto-fill AI State
+  const [isAutoFilling, setIsAutoFilling] = useState(false);
+  const autoFillFileRef = useRef<HTMLInputElement>(null);
 
   // Custom Dropdown State
   const [searchQuery, setSearchQuery] = useState('');
@@ -40,6 +45,88 @@ export const RestockForm: React.FC<RestockFormProps> = ({ onSuccess }) => {
       { toolId: nextTool?.id || '', quantityAdded: 5, notes: 'Restock tambahan' },
     ]);
     setActiveRestockIndex(restockItems.length);
+  };
+
+  // ── AI Auto-Fill from PDF ───────────────────────────────────────
+  const fuzzyMatchTool = (itemName: string) => {
+    const lower = itemName.toLowerCase();
+    // 1. Exact code match (e.g. TL-BOS-03)
+    const codeMatch = tools.find(t => lower.includes(t.code.toLowerCase()));
+    if (codeMatch) return codeMatch;
+    // 2. Name substring match
+    const nameMatch = tools.find(t => lower.includes(t.name.toLowerCase()) || t.name.toLowerCase().includes(lower));
+    if (nameMatch) return nameMatch;
+    // 3. Word-by-word similarity: find the tool with most matching words
+    const words = lower.split(/\s+/).filter(w => w.length > 2);
+    let bestMatch: typeof tools[0] | null = null;
+    let bestScore = 0;
+    for (const tool of tools) {
+      const toolWords = tool.name.toLowerCase().split(/\s+/);
+      const score = words.filter(w => toolWords.some(tw => tw.includes(w) || w.includes(tw))).length;
+      if (score > bestScore) {
+        bestScore = score;
+        bestMatch = tool;
+      }
+    }
+    return bestScore >= 1 ? bestMatch : null;
+  };
+
+  const handleAutoFillFromPDF = async (file: File) => {
+    setIsAutoFilling(true);
+    setErrorMsg(null);
+    setSuccessAutoFill(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('http://localhost:8000/api/parse-restock', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) throw new Error('Gagal terhubung ke server AI.');
+
+      const data = await res.json();
+
+      if (data.status !== 'success' || !data.items?.length) {
+        setErrorMsg(data.message || 'AI tidak menemukan item di dalam PDF.');
+        setIsAutoFilling(false);
+        return;
+      }
+
+      // Match extracted items to master data tools
+      const newRows: RestockItemState[] = [];
+      const unmatchedItems: string[] = [];
+
+      for (const item of data.items) {
+        const matchedTool = fuzzyMatchTool(item.name);
+        if (matchedTool) {
+          newRows.push({
+            toolId: matchedTool.id,
+            quantityAdded: item.quantity,
+            notes: `Auto-fill dari PDF: ${file.name}`,
+          });
+        } else {
+          unmatchedItems.push(item.name);
+        }
+      }
+
+      if (newRows.length > 0) {
+        setRestockItems(newRows);
+        setActiveRestockIndex(0);
+        setSuccessAutoFill(
+          `Berhasil mengisi ${newRows.length} item dari PDF.` +
+          (unmatchedItems.length > 0 ? ` (${unmatchedItems.length} item tidak ditemukan di master data)` : '')
+        );
+      } else {
+        setErrorMsg('Tidak ada item dari PDF yang cocok dengan master data tools.');
+      }
+    } catch (err) {
+      setErrorMsg('Gagal memproses PDF. Pastikan server AI Python sudah berjalan.');
+    } finally {
+      setIsAutoFilling(false);
+    }
   };
 
   const handleRemoveRestockRow = (idx: number) => {
@@ -99,6 +186,21 @@ export const RestockForm: React.FC<RestockFormProps> = ({ onSuccess }) => {
         </div>
       )}
 
+      {successAutoFill && (
+        <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-md flex items-center space-x-3 text-xs font-bold shadow-sm">
+          <Sparkles className="w-5 h-5 shrink-0 text-emerald-600" />
+          <span>{successAutoFill} — Silakan crosscheck sebelum klik &quot;Update Data Stok&quot;.</span>
+        </div>
+      )}
+
+      {/* Loading Overlay during AI processing */}
+      {isAutoFilling && (
+        <div className="p-6 bg-slate-50 border border-slate-200 rounded-md flex flex-col items-center justify-center space-y-3 shadow-sm">
+          <Loader2 className="w-8 h-8 animate-spin text-slate-900" />
+          <p className="text-sm font-bold text-slate-700">AI sedang membaca dan menganalisis PDF...</p>
+          <p className="text-xs text-slate-500">Proses ini membutuhkan beberapa detik.</p>
+        </div>
+      )}
       {/* Multi Restock Items Selector */}
       <div className="bg-white p-5 rounded-md border border-slate-200 shadow-sm space-y-4">
         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
@@ -106,14 +208,43 @@ export const RestockForm: React.FC<RestockFormProps> = ({ onSuccess }) => {
             Daftar Barang Datang Yang Akan Ditambah Stoknya ({restockItems.length} Item)
           </span>
 
-          <button
-            type="button"
-            onClick={handleAddRestockRow}
-            className="px-3.5 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 font-semibold rounded-md text-xs flex items-center space-x-1.5 transition-all"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Tambah Item Datang</span>
-          </button>
+          <div className="flex items-center space-x-2">
+            {/* AI Auto-Fill Button */}
+            <input
+              type="file"
+              ref={autoFillFileRef}
+              accept=".pdf"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleAutoFillFromPDF(file);
+                e.target.value = '';
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => autoFillFileRef.current?.click()}
+              disabled={isAutoFilling}
+              className="px-3.5 py-1.5 bg-slate-900 text-white hover:bg-slate-800 border border-slate-700 font-semibold rounded-md text-xs flex items-center space-x-1.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+            >
+              {isAutoFilling ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Sparkles className="w-4 h-4" />
+              )}
+              <span>{isAutoFilling ? 'AI Memproses...' : 'Tambah Otomatis (PDF)'}</span>
+            </button>
+
+            {/* Manual Add Button */}
+            <button
+              type="button"
+              onClick={handleAddRestockRow}
+              className="px-3.5 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 font-semibold rounded-md text-xs flex items-center space-x-1.5 transition-all"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Tambah Item Datang</span>
+            </button>
+          </div>
         </div>
 
         <div className="flex items-center space-x-2 overflow-x-auto pb-1">

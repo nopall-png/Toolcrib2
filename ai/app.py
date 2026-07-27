@@ -99,6 +99,113 @@ async def upload_endpoint(file: UploadFile = File(...)):
         if os.path.exists(temp_path):
             os.remove(temp_path)
 
+
+@app.post("/api/parse-restock")
+async def parse_restock_endpoint(file: UploadFile = File(...)):
+    """
+    Endpoint to parse a PDF (Surat Jalan / Delivery Order / Purchase Request)
+    and extract item names + quantities using AI (Ollama/Llama 3).
+    Returns structured JSON for auto-filling the Restock form.
+    """
+    if not file.filename.endswith(".pdf"):
+        return {"status": "error", "message": "Hanya file PDF yang didukung.", "items": []}
+    
+    temp_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "temp_parse_restock.pdf")
+    try:
+        # 1. Save file temporarily
+        with open(temp_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        
+        # 2. Extract text from PDF using pdfplumber
+        import pdfplumber
+        full_text = ""
+        with pdfplumber.open(temp_path) as pdf:
+            for page in pdf.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    full_text += page_text + "\n"
+        
+        if not full_text.strip():
+            return {"status": "error", "message": "PDF tidak mengandung teks yang bisa dibaca.", "items": []}
+        
+        # 3. Send to Ollama/Llama 3 for structured extraction
+        if rag.llm is None:
+            return {"status": "error", "message": "Ollama/Llama 3 tidak tersedia. Pastikan Ollama sudah berjalan.", "items": []}
+        
+        extraction_prompt = f"""Anda adalah asisten ekstraktor data. Tugas Anda adalah membaca teks dari dokumen PDF (Surat Jalan / Purchase Request / Delivery Order) dan mengekstrak SEMUA item barang beserta jumlahnya.
+
+TEKS DOKUMEN:
+{full_text[:3000]}
+
+INSTRUKSI:
+1. Ekstrak SETIAP item/barang yang disebutkan beserta jumlah (quantity) nya.
+2. WAJIB balas dalam format JSON array yang valid, tanpa teks tambahan.
+3. Setiap item harus memiliki field "name" (nama barang) dan "quantity" (jumlah, angka).
+4. Jika jumlah tidak disebutkan, gunakan 1 sebagai default.
+5. HANYA balas dengan JSON array, JANGAN tambahkan penjelasan apapun.
+
+CONTOH FORMAT BALASAN:
+[{{"name": "Makita Cordless Drill", "quantity": 5}}, {{"name": "Safety Glasses", "quantity": 10}}]
+
+BALASAN JSON:"""
+        
+        try:
+            raw_response = rag.llm.invoke(extraction_prompt)
+            print(f"[PARSE-RESTOCK] Raw LLM response: {raw_response[:500]}")
+            
+            # 4. Parse the JSON response from LLM
+            import json
+            import re
+            
+            # Try to find JSON array in the response
+            json_match = re.search(r'\[.*\]', raw_response, re.DOTALL)
+            if json_match:
+                items_raw = json.loads(json_match.group())
+            else:
+                # Fallback: try parsing the whole response
+                items_raw = json.loads(raw_response.strip())
+            
+            # 5. Validate and clean the items
+            parsed_items = []
+            for item in items_raw:
+                if isinstance(item, dict) and "name" in item:
+                    parsed_items.append({
+                        "name": str(item.get("name", "")).strip(),
+                        "quantity": max(1, int(item.get("quantity", 1)))
+                    })
+            
+            print(f"[PARSE-RESTOCK] Extracted {len(parsed_items)} items from PDF '{file.filename}'")
+            
+            return {
+                "status": "success",
+                "message": f"Berhasil mengekstrak {len(parsed_items)} item dari '{file.filename}'.",
+                "items": parsed_items
+            }
+        
+        except json.JSONDecodeError as je:
+            print(f"[PARSE-RESTOCK] JSON parse error: {je}")
+            print(f"[PARSE-RESTOCK] Raw response was: {raw_response[:500]}")
+            return {
+                "status": "error",
+                "message": "AI gagal menghasilkan format data yang valid. Coba upload ulang.",
+                "items": []
+            }
+        except Exception as llm_err:
+            print(f"[PARSE-RESTOCK] LLM error: {llm_err}")
+            return {
+                "status": "error",
+                "message": f"Gagal memproses dengan AI: {str(llm_err)}",
+                "items": []
+            }
+    
+    except Exception as e:
+        print(f"[PARSE-RESTOCK] General error: {e}")
+        return {"status": "error", "message": f"Gagal memproses file: {str(e)}", "items": []}
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+
+
 if __name__ == "__main__":
     # Run server on port 8000 (reload=False to prevent infinite reload loops due to logs/db changes)
     uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=False)
