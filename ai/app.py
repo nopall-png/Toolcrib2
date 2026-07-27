@@ -140,12 +140,13 @@ TEKS DOKUMEN:
 INSTRUKSI:
 1. Ekstrak SETIAP item/barang yang disebutkan beserta jumlah (quantity) nya.
 2. WAJIB balas dalam format JSON array yang valid, tanpa teks tambahan.
-3. Setiap item harus memiliki field "name" (nama barang) dan "quantity" (jumlah, angka).
+3. Setiap item harus memiliki field "name" (nama barang), "quantity" (jumlah, angka), dan "notes" (keterangan tambahan jika ada).
 4. Jika jumlah tidak disebutkan, gunakan 1 sebagai default.
-5. HANYA balas dengan JSON array, JANGAN tambahkan penjelasan apapun.
+5. Jika ada keterangan/notes untuk barang tersebut di dalam PDF (seperti alasan, kondisi, atau nomor referensi), masukkan ke field "notes". Jika tidak ada keterangan sama sekali, kosongkan string "".
+6. HANYA balas dengan JSON array, JANGAN tambahkan penjelasan apapun.
 
 CONTOH FORMAT BALASAN:
-[{{"name": "Makita Cordless Drill", "quantity": 5}}, {{"name": "Safety Glasses", "quantity": 10}}]
+[{{"name": "Makita Cordless Drill", "quantity": 5, "notes": "Pengganti barang rusak"}}, {{"name": "Safety Glasses", "quantity": 10, "notes": ""}}]
 
 BALASAN JSON:"""
         
@@ -171,7 +172,8 @@ BALASAN JSON:"""
                 if isinstance(item, dict) and "name" in item:
                     parsed_items.append({
                         "name": str(item.get("name", "")).strip(),
-                        "quantity": max(1, int(item.get("quantity", 1)))
+                        "quantity": max(1, int(item.get("quantity", 1))),
+                        "notes": str(item.get("notes", "")).strip()
                     })
             
             print(f"[PARSE-RESTOCK] Extracted {len(parsed_items)} items from PDF '{file.filename}'")
