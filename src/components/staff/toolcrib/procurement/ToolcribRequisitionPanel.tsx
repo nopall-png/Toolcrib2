@@ -3,8 +3,7 @@
 import React, { useState } from 'react';
 import { useAppStore } from '@/src/lib/store';
 import { ToolItem } from '@/src/lib/mock';
-import { ShoppingCart, Search, AlertTriangle, Plus } from 'lucide-react';
-import { RequisitionCartModal } from './RequisitionCartModal';
+import { ShoppingCart, Search, AlertTriangle, Plus, Minus, Send } from 'lucide-react';
 import { RequisitionQuantityModal } from './RequisitionQuantityModal';
 
 interface ToolcribRequisitionPanelProps {
@@ -12,7 +11,7 @@ interface ToolcribRequisitionPanelProps {
 }
 
 export const ToolcribRequisitionPanel: React.FC<ToolcribRequisitionPanelProps> = ({ initialSelectedTool }) => {
-  const { tools, createProcurementRequest } = useAppStore();
+  const { tools, createProcurementRequest, procurementCart, procurementCartQtys, addToProcurementCart, updateProcurementCartQty, clearProcurementCart } = useAppStore();
 
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -20,17 +19,14 @@ export const ToolcribRequisitionPanel: React.FC<ToolcribRequisitionPanelProps> =
   const [selectedTool, setSelectedTool] = useState<ToolItem | null>(initialSelectedTool || null);
   const [isSingleModalOpen, setIsSingleModalOpen] = useState(Boolean(initialSelectedTool));
   
-  // Cart States
-  const [cart, setCart] = useState<ToolItem[]>([]);
-  const [cartModalOpen, setCartModalOpen] = useState(false);
-  const [cartQtys, setCartQtys] = useState<Record<string, number>>({});
+  // Cart States removed (moved to global store)
   
   // Add to Cart Modal States
   const [toolToAddToCart, setToolToAddToCart] = useState<ToolItem | null>(null);
 
   // Derived Calculations
-  const calculatedCartCost = cart.reduce((total, tool) => {
-    return total + ((tool.unitPrice || 50000) * (cartQtys[tool.id] || 1));
+  const calculatedCartCost = procurementCart.reduce((total, tool) => {
+    return total + ((tool.unitPrice || 50000) * (procurementCartQtys[tool.id] || 1));
   }, 0);
 
   // Sort and filter tools
@@ -48,16 +44,7 @@ export const ToolcribRequisitionPanel: React.FC<ToolcribRequisitionPanelProps> =
   // Handlers
   const confirmAddToCart = (qty: number) => {
     if (toolToAddToCart) {
-      setCart(prev => {
-        if (!prev.find(t => t.id === toolToAddToCart.id)) {
-          return [...prev, toolToAddToCart];
-        }
-        return prev;
-      });
-      setCartQtys(prev => ({
-        ...prev, 
-        [toolToAddToCart.id]: qty 
-      }));
+      addToProcurementCart(toolToAddToCart, qty);
       setToolToAddToCart(null);
     }
   };
@@ -80,25 +67,23 @@ export const ToolcribRequisitionPanel: React.FC<ToolcribRequisitionPanelProps> =
 
   const handleCartSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    cart.forEach(tool => {
+    procurementCart.forEach(tool => {
       createProcurementRequest({
         toolId: tool.id,
         toolName: tool.name,
-        quantity: cartQtys[tool.id] || 1,
+        quantity: procurementCartQtys[tool.id] || 1,
         unit: tool.unit,
         reason: 'Restock / Kebutuhan Operasional',
-        estimatedCost: (tool.unitPrice || 50000) * (cartQtys[tool.id] || 1),
+        estimatedCost: (tool.unitPrice || 50000) * (procurementCartQtys[tool.id] || 1),
       });
     });
-    setCart([]);
-    setCartQtys({});
-    setCartModalOpen(false);
-    // You might want to use a better toast here instead of alert, but keeping logic same
+    clearProcurementCart();
     alert('Purchase Request kolektif berhasil dikirim ke Procurement!');
   };
 
   return (
-    <div className="space-y-6 relative pb-20">
+    <div className="flex flex-col lg:flex-row gap-6 relative pb-20 items-start">
+      <div className="flex-1 space-y-6 min-w-0 w-full">
       {/* Search Header */}
       <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="relative w-full md:w-80">
@@ -139,9 +124,9 @@ export const ToolcribRequisitionPanel: React.FC<ToolcribRequisitionPanelProps> =
                 </div>
               </div>
               <div className="flex flex-col sm:flex-row gap-2 shrink-0">
-                {cart.find(t => t.id === tool.id) ? (
+                {procurementCart.find(t => t.id === tool.id) ? (
                   <button
-                    onClick={() => setCart(cart.filter(t => t.id !== tool.id))}
+                    onClick={() => updateProcurementCartQty(tool.id, 0)}
                     className="w-full sm:w-auto px-4 py-2 border font-semibold rounded-lg text-sm transition-colors shadow-xs bg-slate-100 text-slate-500 border-slate-300 hover:bg-slate-200"
                   >
                     Hapus Keranjang
@@ -172,32 +157,7 @@ export const ToolcribRequisitionPanel: React.FC<ToolcribRequisitionPanelProps> =
         </div>
       </div>
 
-      {/* Cart Summary Floating Button (FAB style identical to user) */}
-      {cart.length > 0 && (
-        <button
-          onClick={() => setCartModalOpen(true)}
-          className="fixed bottom-6 right-6 z-40 bg-slate-900 text-white p-4 rounded-full shadow-2xl flex items-center justify-center hover:bg-slate-800 transition-all hover:scale-105 active:scale-95 group border-2 border-slate-700"
-        >
-          <div className="relative">
-            <ShoppingCart className="w-6 h-6" />
-            <span className="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-slate-900 group-hover:border-slate-800">
-              {cart.length}
-            </span>
-          </div>
-        </button>
-      )}
-
-      {/* Cart Modal */}
-      <RequisitionCartModal
-        isOpen={cartModalOpen}
-        onClose={() => setCartModalOpen(false)}
-        cart={cart}
-        cartQtys={cartQtys}
-        setCartQtys={setCartQtys}
-        setCart={setCart}
-        handleCartSubmit={handleCartSubmit}
-        calculatedCartCost={calculatedCartCost}
-      />
+      </div>
 
       {/* Single Purchase Request Modal */}
       <RequisitionQuantityModal

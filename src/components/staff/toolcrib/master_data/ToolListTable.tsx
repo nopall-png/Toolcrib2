@@ -16,6 +16,7 @@ export const ToolListTable: React.FC<ToolListTableProps> = ({ tools, onSelectToo
         <table className="w-full text-left text-xs">
           <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider">
             <tr>
+              <th className="p-4 w-12 text-center">No.</th>
               <th className="p-4">Kode & Tool Name</th>
               <th className="p-4">Kategori</th>
               <th className="p-4 text-center">Stok Asli</th>
@@ -25,12 +26,15 @@ export const ToolListTable: React.FC<ToolListTableProps> = ({ tools, onSelectToo
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 font-medium">
-            {tools.map((tool) => (
+            {tools.map((tool, index) => (
               <tr
                 key={tool.id}
                 onClick={() => onSelectTool(tool)}
                 className="hover:bg-slate-50/80 transition-colors cursor-pointer"
               >
+                <td className="p-4 text-center text-slate-500 font-bold text-xs">
+                  {index + 1}
+                </td>
                 <td className="p-4">
                   <div className="flex items-center space-x-3">
                     <img

@@ -10,6 +10,8 @@ import { AddToolView } from '@/src/components/staff/toolcrib/add_tool/AddToolVie
 import { UserRequestsView } from '@/src/components/staff/toolcrib/user_requests/UserRequestsView';
 import { ToolcribRequisitionView } from '@/src/components/staff/toolcrib/procurement/ToolcribRequisitionView';
 import { AiInsightsView } from '@/src/components/staff/toolcrib/ai_insights/AiInsightsView';
+import { UserManagementView } from '@/src/components/staff/toolcrib/user_management/UserManagementView';
+import { ProcurementCartSidebar } from '@/src/components/staff/toolcrib/procurement/ProcurementCartSidebar';
 import { ToolItem } from '@/src/lib/mock';
 
 export const StaffDashboardView: React.FC = () => {
@@ -45,9 +47,13 @@ export const StaffDashboardView: React.FC = () => {
           {managementTab === 'procurement' && (
             <ToolcribRequisitionView initialSelectedTool={selectedToolForPr} />
           )}
+          {managementTab === 'user_management' && <UserManagementView />}
           {managementTab === 'ai_insights' && <AiInsightsView />}
         </main>
       </div>
+
+      {/* Right Sidebar Cart for Procurement */}
+      {managementTab === 'procurement' && <ProcurementCartSidebar />}
     </div>
   );
 };

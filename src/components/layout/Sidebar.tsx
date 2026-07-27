@@ -11,6 +11,7 @@ import {
   Wrench,
   Building,
   User,
+  Users,
   ShieldCheck,
   PackagePlus,
   History,
@@ -28,6 +29,7 @@ export type ActiveTab =
   | 'add_tool'
   | 'user_requests'
   | 'procurement'
+  | 'user_management'
   | 'ai_insights';
 
 export type ManagementTab = ActiveTab;
@@ -120,6 +122,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
         icon: ShoppingCart,
         badge: pendingProcurementCount > 0 ? `${pendingProcurementCount}` : undefined,
         badgeColor: 'bg-blue-600 text-white',
+      },
+      {
+        id: 'user_management' as ActiveTab,
+        label: 'Manajemen Akses User',
+        icon: Users,
       },
       {
         id: 'ai_insights' as ActiveTab,

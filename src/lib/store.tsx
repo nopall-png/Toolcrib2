@@ -7,10 +7,12 @@ import {
   UserRequest,
   UserRequestItem,
   ProcurementRequest,
+  AppUser,
   INITIAL_DEPARTMENTS,
   INITIAL_TOOLS,
   INITIAL_USER_REQUESTS,
   INITIAL_PROCUREMENT_REQUESTS,
+  INITIAL_USERS,
 } from './mock';
 
 export type UserRole = 'NONE' | 'USER' | 'TOOLCRIB' | 'PROCUREMENT';
@@ -27,12 +29,15 @@ interface AppContextType {
   // Session
   session: UserSession;
   loginUserStep1: (deptId: string, pass: string) => { success: boolean; message?: string };
-  loginUserStep2: (name: string, empId: string) => void;
+  loginUserStep2: (userId: string) => void;
   loginStaff: (role: 'TOOLCRIB' | 'PROCUREMENT') => void;
   logout: () => void;
 
   // Master Data
   departments: Department[];
+  users: AppUser[];
+  addUser: (user: Omit<AppUser, 'id'>) => void;
+  removeUser: (userId: string) => void;
   tools: ToolItem[];
   addToolItem: (tool: Omit<ToolItem, 'id'>) => void;
   updateToolStock: (toolId: string, newStock: number) => void;
@@ -60,6 +65,13 @@ interface AppContextType {
     estimatedCost: number;
   }) => void;
   updateProcurementStatus: (prId: string, status: ProcurementRequest['status']) => void;
+
+  // Procurement Cart
+  procurementCart: ToolItem[];
+  procurementCartQtys: Record<string, number>;
+  addToProcurementCart: (tool: ToolItem, qty: number) => void;
+  updateProcurementCartQty: (toolId: string, qty: number) => void;
+  clearProcurementCart: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -67,10 +79,14 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [session, setSession] = useState<UserSession>({ role: 'NONE' });
   const [departments] = useState<Department[]>(INITIAL_DEPARTMENTS);
+  const [users, setUsers] = useState<AppUser[]>(INITIAL_USERS);
   const [tools, setTools] = useState<ToolItem[]>(INITIAL_TOOLS);
   const [cart, setCart] = useState<UserRequestItem[]>([]);
   const [userRequests, setUserRequests] = useState<UserRequest[]>(INITIAL_USER_REQUESTS);
   const [procurementRequests, setProcurementRequests] = useState<ProcurementRequest[]>(INITIAL_PROCUREMENT_REQUESTS);
+
+  const [procurementCart, setProcurementCart] = useState<ToolItem[]>([]);
+  const [procurementCartQtys, setProcurementCartQtys] = useState<Record<string, number>>({});
 
   // Recalculate status of tools dynamically based on minStock
   useEffect(() => {
@@ -102,12 +118,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { success: true };
   };
 
-  // Step 2: User Enter Name & ID
-  const loginUserStep2 = (name: string, empId: string) => {
+  // Step 2: User Enter Name & ID (Now by selecting User ID)
+  const loginUserStep2 = (userId: string) => {
+    const user = users.find((u) => u.id === userId);
+    if (!user) return;
     setSession((prev) => ({
       ...prev,
-      userName: name,
-      employeeId: empId,
+      userName: user.name,
+      employeeId: user.employeeId,
       isVerified: true,
     }));
   };
@@ -273,7 +291,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
 
-  // Master Tools Operations
+  // Master Tools & Users Operations
+  const addUser = (newUser: Omit<AppUser, 'id'>) => {
+    const id = `usr-${Date.now().toString().slice(-4)}`;
+    setUsers((prev) => [...prev, { ...newUser, id }]);
+  };
+
+  const removeUser = (userId: string) => {
+    setUsers((prev) => prev.filter(u => u.id !== userId));
+  };
+
   const addToolItem = (newTool: Omit<ToolItem, 'id'>) => {
     const id = `tool-${Date.now().toString().slice(-4)}`;
     const status: ToolItem['status'] =
@@ -330,6 +357,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
 
+  const addToProcurementCart = (tool: ToolItem, qty: number) => {
+    setProcurementCart(prev => {
+      if (!prev.find(t => t.id === tool.id)) {
+        return [...prev, tool];
+      }
+      return prev;
+    });
+    setProcurementCartQtys(prev => ({ ...prev, [tool.id]: qty }));
+  };
+
+  const updateProcurementCartQty = (toolId: string, qty: number) => {
+    if (qty <= 0) {
+      setProcurementCart(prev => prev.filter(t => t.id !== toolId));
+      setProcurementCartQtys(prev => {
+        const newQtys = { ...prev };
+        delete newQtys[toolId];
+        return newQtys;
+      });
+      return;
+    }
+    setProcurementCartQtys(prev => ({ ...prev, [toolId]: qty }));
+  };
+
+  const clearProcurementCart = () => {
+    setProcurementCart([]);
+    setProcurementCartQtys({});
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -339,6 +394,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         loginStaff,
         logout,
         departments,
+        users,
+        addUser,
+        removeUser,
         tools,
         addToolItem,
         updateToolStock,
@@ -355,6 +413,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         procurementRequests,
         createProcurementRequest,
         updateProcurementStatus,
+        procurementCart,
+        procurementCartQtys,
+        addToProcurementCart,
+        updateProcurementCartQty,
+        clearProcurementCart,
       }}
     >
       {children}
