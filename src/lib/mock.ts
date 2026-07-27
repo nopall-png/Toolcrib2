@@ -64,7 +64,7 @@ export interface UserRequest {
   employeeId: string;
   department: string;
   items: UserRequestItem[];
-  status: 'Pending' | 'Approved' | 'Issued' | 'Rejected' | 'Returned';
+  status: 'Pending' | 'Accept' | 'On going' | 'Sudah sampai' | 'Reject';
   requestDate: string;
   notes?: string;
   
@@ -90,7 +90,7 @@ export interface ProcurementRequest {
   unit: string;
   reason: string;
   requestedBy: string;
-  status: 'Pending Approval' | 'Approved' | 'Ordered' | 'Fulfilled' | 'Rejected';
+  status: 'Pending' | 'Accept' | 'On going' | 'Sudah sampai' | 'Reject';
   requestDate: string;
   estimatedCost: number; // in IDR
 }

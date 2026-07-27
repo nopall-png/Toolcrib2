@@ -14,6 +14,7 @@ import {
   INITIAL_PROCUREMENT_REQUESTS,
   INITIAL_USERS,
 } from './mock';
+import { supabase } from './supabase';
 
 export type UserRole = 'NONE' | 'USER' | 'TOOLCRIB' | 'PROCUREMENT';
 
@@ -52,7 +53,7 @@ interface AppContextType {
   submitNonStandardRequest: (details: NonNullable<UserRequest['nonStandardDetails']>, notes?: string) => { success: boolean; message?: string };
   userRequests: UserRequest[];
   updateUserRequestStatus: (reqId: string, status: UserRequest['status']) => void;
-  updateUserRequestItemStatus: (reqId: string, itemToolId: string, status: 'Approved' | 'Rejected', rejectionReason?: string) => void;
+  updateUserRequestItemStatus: (reqId: string, itemToolId: string, status: 'Accept' | 'Reject', rejectionReason?: string) => void;
 
   // Procurement Requests
   procurementRequests: ProcurementRequest[];
@@ -78,26 +79,104 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [session, setSession] = useState<UserSession>({ role: 'NONE' });
-  const [departments] = useState<Department[]>(INITIAL_DEPARTMENTS);
-  const [users, setUsers] = useState<AppUser[]>(INITIAL_USERS);
-  const [tools, setTools] = useState<ToolItem[]>(INITIAL_TOOLS);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [users, setUsers] = useState<AppUser[]>([]);
+  const [tools, setTools] = useState<ToolItem[]>([]);
   const [cart, setCart] = useState<UserRequestItem[]>([]);
-  const [userRequests, setUserRequests] = useState<UserRequest[]>(INITIAL_USER_REQUESTS);
-  const [procurementRequests, setProcurementRequests] = useState<ProcurementRequest[]>(INITIAL_PROCUREMENT_REQUESTS);
+  const [userRequests, setUserRequests] = useState<UserRequest[]>([]);
+  const [procurementRequests, setProcurementRequests] = useState<ProcurementRequest[]>([]);
 
   const [procurementCart, setProcurementCart] = useState<ToolItem[]>([]);
   const [procurementCartQtys, setProcurementCartQtys] = useState<Record<string, number>>({});
 
-  // Recalculate status of tools dynamically based on minStock
   useEffect(() => {
-    setTools((prev) =>
-      prev.map((t) => {
-        let status: ToolItem['status'] = 'Available';
-        if (t.stock === 0) status = 'Out of Stock';
-        else if (t.stock <= t.minStock) status = 'Low Stock';
-        return { ...t, status };
-      })
-    );
+    const fetchData = async () => {
+      const [deptRes, userRes, toolRes, reqRes, reqItemRes, procRes] = await Promise.all([
+        supabase.from('departments').select('*'),
+        supabase.from('users').select('*'),
+        supabase.from('tools').select('*'),
+        supabase.from('user_requests').select('*'),
+        supabase.from('user_request_items').select('*'),
+        supabase.from('procurement_requests').select('*')
+      ]);
+
+      if (deptRes.data) {
+        setDepartments(deptRes.data.map((d: any) => ({
+          id: d.id,
+          code: d.code,
+          name: d.name,
+          passwordHash: d.password_hash
+        })));
+      }
+      if (userRes.data) {
+        setUsers(userRes.data.map((u: any) => ({
+          id: u.id,
+          employeeId: u.employee_id,
+          name: u.name,
+          departmentId: u.department_id,
+          role: u.role
+        })));
+      }
+      if (toolRes.data) {
+        setTools(toolRes.data.map((t: any) => ({
+          id: t.id,
+          code: t.code,
+          name: t.name,
+          category: t.category,
+          stock: t.stock,
+          minStock: t.min_stock,
+          maxStock: t.max_stock,
+          unit: t.unit,
+          location: t.location,
+          imageUrl: t.image_url,
+          description: t.description,
+          status: t.stock === 0 ? 'Out of Stock' : (t.stock <= t.min_stock ? 'Low Stock' : 'Available')
+        })));
+      }
+      if (reqRes.data && reqItemRes.data && toolRes.data && userRes.data && deptRes.data) {
+        const transformedRequests = reqRes.data.map((r: any) => {
+          const items = reqItemRes.data
+            .filter((i: any) => i.request_id === r.id)
+            .map((i: any) => ({
+              id: i.id,
+              toolId: i.tool_id,
+              toolName: toolRes.data?.find((t: any) => t.id === i.tool_id)?.name || 'Unknown',
+              quantity: i.quantity,
+              status: r.status === 'Accept' || r.status === 'On going' || r.status === 'Sudah sampai' ? 'Accept' : (r.status === 'Reject' ? 'Reject' : undefined)
+            }));
+          
+          return {
+            id: r.id,
+            requestNo: r.request_no,
+            employeeId: userRes.data?.find((u: any) => u.id === r.requestor_id)?.employee_id || '',
+            department: deptRes.data?.find((d: any) => d.id === r.department_id)?.name || '',
+            items: items,
+            status: r.status,
+            requestDate: new Date(r.request_date).toISOString().substring(0, 10),
+            notes: r.notes
+          };
+        });
+        setUserRequests(transformedRequests);
+      }
+      
+      if (procRes.data && toolRes.data && userRes.data) {
+         setProcurementRequests(procRes.data.map((p: any) => ({
+           id: p.id,
+           poNo: p.po_no,
+           toolId: p.tool_id,
+           toolName: toolRes.data?.find((t: any) => t.id === p.tool_id)?.name || 'Unknown',
+           quantity: p.quantity,
+           unit: toolRes.data?.find((t: any) => t.id === p.tool_id)?.unit || 'pcs',
+           reason: '',
+           requestedBy: userRes.data?.find((u: any) => u.id === p.requested_by_id)?.name || 'Staff',
+           status: p.status,
+           requestDate: new Date(p.request_date).toISOString().substring(0, 10),
+           estimatedCost: 0
+         })));
+      }
+    };
+    
+    fetchData();
   }, []);
 
   // Step 1: User Login with Department + Password
@@ -184,15 +263,53 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const clearCart = () => setCart([]);
 
-  const submitUserRequest = (notes?: string) => {
+  const submitUserRequest = async (notes?: string) => {
     if (cart.length === 0) return { success: false, message: 'Keranjang request kosong.' };
     if (!session.userName || !session.employeeId || !session.department) {
       return { success: false, message: 'Data identitas user tidak lengkap.' };
     }
 
     const newReqNo = `REQ-2026-${String(userRequests.length + 1).padStart(3, '0')}`;
+    
+    // Find user UUID
+    const currentUser = users.find(u => u.employeeId === session.employeeId);
+    if (!currentUser) return { success: false, message: 'User not found in DB' };
+
+    // Insert to Supabase user_requests
+    const { data: reqData, error: reqError } = await supabase
+      .from('user_requests')
+      .insert({
+        request_no: newReqNo,
+        department_id: currentUser.departmentId,
+        requestor_id: currentUser.id,
+        status: 'Pending',
+        notes: notes || 'Permintaan barang standar.'
+      })
+      .select()
+      .single();
+
+    if (reqError || !reqData) {
+      console.error(reqError);
+      return { success: false, message: 'Gagal menyimpan ke database' };
+    }
+
+    // Insert to Supabase user_request_items
+    const itemsToInsert = cart.map(item => ({
+      request_id: reqData.id,
+      tool_id: item.toolId,
+      quantity: item.quantity
+    }));
+
+    const { error: itemsError } = await supabase
+      .from('user_request_items')
+      .insert(itemsToInsert);
+
+    if (itemsError) {
+      console.error(itemsError);
+    }
+
     const newRequest: UserRequest = {
-      id: `req-${Date.now()}`,
+      id: reqData.id,
       requestNo: newReqNo,
       userName: session.userName,
       employeeId: session.employeeId,
@@ -237,17 +354,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       prev.map((req) => {
         if (req.id === reqId) {
           // If issuing item, deduct stock from toolcrib
-          if (status === 'Issued' && req.status !== 'Issued') {
+          if (status === 'On going' && req.status !== 'On going') {
             req.items.forEach((item) => {
-              if (item.status === 'Approved' || !item.status) {
+              if (item.status === 'Accept' || !item.status) {
                 updateToolStock(item.toolId, -item.quantity);
               }
             });
           }
           // If returning item, add stock back to toolcrib
-          if (status === 'Returned' && req.status === 'Issued') {
+          if (status === 'Sudah sampai' && req.status === 'On going') {
             req.items.forEach((item) => {
-              if (item.status === 'Approved' || !item.status) {
+              if (item.status === 'Accept' || !item.status) {
                 updateToolStock(item.toolId, item.quantity);
               }
             });
@@ -259,7 +376,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
 
-  const updateUserRequestItemStatus = (reqId: string, itemToolId: string, status: 'Approved' | 'Rejected', rejectionReason?: string) => {
+  const updateUserRequestItemStatus = (reqId: string, itemToolId: string, status: 'Accept' | 'Reject', rejectionReason?: string) => {
     setUserRequests((prev) =>
       prev.map((req) => {
         if (req.id === reqId) {
@@ -271,16 +388,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           });
 
           // Check if all items are resolved
-          const allResolved = updatedItems.every(item => item.status === 'Approved' || item.status === 'Rejected');
-          const allRejected = updatedItems.every(item => item.status === 'Rejected');
-          const anyApproved = updatedItems.some(item => item.status === 'Approved');
+          const allResolved = updatedItems.every(item => item.status === 'Accept' || item.status === 'Reject');
+          const allRejected = updatedItems.every(item => item.status === 'Reject');
+          const anyApproved = updatedItems.some(item => item.status === 'Accept');
 
           let newReqStatus = req.status;
           if (allResolved && req.status === 'Pending') {
             if (allRejected) {
-              newReqStatus = 'Rejected';
+              newReqStatus = 'Reject';
             } else if (anyApproved) {
-              newReqStatus = 'Approved';
+              newReqStatus = 'Accept';
             }
           }
 
@@ -340,7 +457,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       poNo: newPrNo,
       ...data,
       requestedBy: session.userName || 'Toolcrib Staff',
-      status: 'Pending Approval',
+      status: 'Pending',
       requestDate: new Date().toISOString().substring(0, 10),
     };
     setProcurementRequests((prev) => [newPr, ...prev]);
