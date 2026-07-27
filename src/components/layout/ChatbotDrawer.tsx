@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { User } from "@/types/user";
+import { User } from "@/src/types/user";
 
 interface Message {
   id: string;
@@ -24,7 +24,8 @@ export default function ChatbotDrawer({ isOpen, onClose, user }: ChatbotDrawerPr
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const displayName = user ? user.fullName : "John Hardward";
+  // Use userName instead of fullName to match the user object we saw in Header
+  const displayName = user ? user.userName : "John Hardward";
 
   // Scroll to bottom when messages update
   useEffect(() => {
@@ -44,8 +45,8 @@ export default function ChatbotDrawer({ isOpen, onClose, user }: ChatbotDrawerPr
     // 3. Replace *italic* with <em>italic</em>
     formatted = formatted.replace(/\*(.*?)\*/g, "<em>$1</em>");
 
-    // 4. Replace `code` with <code class="bg-zinc-950 px-1 py-0.5 rounded text-red-400 font-mono text-[9px]">$1</code>
-    formatted = formatted.replace(/`(.*?)`/g, '<code class="bg-zinc-950 px-1 py-0.5 rounded text-red-400 font-mono text-[9px]">$1</code>');
+    // 4. Replace `code` with <code class="bg-slate-100 px-1 py-0.5 rounded text-red-600 font-mono text-[9px] border border-slate-200">$1</code>
+    formatted = formatted.replace(/`(.*?)`/g, '<code class="bg-slate-100 px-1 py-0.5 rounded text-red-600 font-mono text-[9px] border border-slate-200">$1</code>');
 
     // 5. Replace newlines with <br />
     formatted = formatted.replace(/\n/g, "<br />");
@@ -95,7 +96,7 @@ export default function ChatbotDrawer({ isOpen, onClose, user }: ChatbotDrawerPr
         const formData = new FormData();
         formData.append("file", fileToSend);
 
-        const uploadRes = await fetch("http://localhost:8000/api/upload", {
+        const uploadRes = await fetch("http://localhost:8001/api/upload", {
           method: "POST",
           body: formData,
         });
@@ -143,7 +144,7 @@ export default function ChatbotDrawer({ isOpen, onClose, user }: ChatbotDrawerPr
     // 2. Process Chat Query if caption/text is present
     if (captionToSend) {
       try {
-        const response = await fetch("http://localhost:8000/api/chat", {
+        const response = await fetch("http://localhost:8001/api/chat", {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
@@ -190,14 +191,14 @@ export default function ChatbotDrawer({ isOpen, onClose, user }: ChatbotDrawerPr
       {isOpen && (
         <div
           onClick={onClose}
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 transition-opacity duration-300"
+          className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 transition-opacity duration-300"
         />
       )}
 
       {/* Drawer Body */}
       <div
         onDragEnter={(e) => { e.preventDefault(); setIsDragging(true); }}
-        className={`fixed top-4 bottom-4 right-4 w-80 bg-neutral-900 border border-zinc-800 rounded-[20px] shadow-2xl z-50 transition-all duration-350 ease-out flex flex-col justify-between overflow-hidden ${
+        className={`fixed top-4 bottom-4 right-4 w-80 bg-white border border-slate-200 rounded-[20px] shadow-2xl z-50 transition-all duration-350 ease-out flex flex-col justify-between overflow-hidden ${
           isOpen ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 pointer-events-none"
         }`}
       >
@@ -214,32 +215,32 @@ export default function ChatbotDrawer({ isOpen, onClose, user }: ChatbotDrawerPr
                 setDraftedFile(file);
               }
             }}
-            className="absolute inset-0 bg-neutral-950/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center border-2 border-dashed border-red-500 rounded-[20px] m-2 transition-all duration-300"
+            className="absolute inset-0 bg-slate-50/90 backdrop-blur-sm z-50 flex flex-col items-center justify-center border-2 border-dashed border-red-500 rounded-[20px] m-2 transition-all duration-300"
           >
             <span className="text-3xl mb-2">📥</span>
-            <span className="text-xs font-sans text-neutral-200 font-medium">Drop PDF file here to attach</span>
-            <span className="text-[9px] font-mono text-zinc-500 mt-1">Suku cadang / PR Document</span>
+            <span className="text-xs font-sans text-slate-700 font-medium">Drop PDF file here to attach</span>
+            <span className="text-[9px] font-mono text-slate-500 mt-1">Suku cadang / PR Document</span>
           </div>
         )}
 
         {/* Top Header Section */}
-        <div className="p-4 flex justify-between items-center border-b border-zinc-800/80">
+        <div className="p-4 flex justify-between items-center border-b border-slate-100 bg-white shadow-sm z-10">
           <div className="flex items-center gap-2">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-600"></span>
             </span>
-            <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider">
+            <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wider">
               ToolCrib Copilot
             </span>
           </div>
           <button
             onClick={onClose}
-            className="text-neutral-500 hover:text-white transition-colors p-1 rounded-full hover:bg-neutral-800 cursor-pointer"
+            className="text-slate-400 hover:text-red-600 transition-colors p-1 rounded-full hover:bg-red-50 cursor-pointer"
             title="Close panel"
           >
             <svg
-              xmlns="http://www.w3.org/2500/svg"
+              xmlns="http://www.w3.org/2000/svg"
               width="18"
               height="18"
               viewBox="0 0 24 24"
@@ -254,15 +255,15 @@ export default function ChatbotDrawer({ isOpen, onClose, user }: ChatbotDrawerPr
         </div>
 
         {/* Chat History Area */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 flex flex-col scrollbar-thin scrollbar-thumb-zinc-800">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 flex flex-col bg-slate-50/50 scrollbar-thin scrollbar-thumb-slate-200">
           {messages.length === 0 ? (
             /* Welcome mockup layout if empty */
             <div className="my-auto flex flex-col justify-end items-start gap-6 pb-4">
               <div className="space-y-1">
-                <div className="text-red-500 text-2xl font-bold font-sans tracking-wide leading-tight">
+                <div className="text-red-600 text-2xl font-black font-sans tracking-tight leading-tight">
                   Hello, {displayName}
                 </div>
-                <div className="text-neutral-400 text-2xl font-medium font-sans tracking-wide leading-tight">
+                <div className="text-slate-500 text-2xl font-medium font-sans tracking-tight leading-tight">
                   What can I help ?
                 </div>
               </div>
@@ -271,13 +272,13 @@ export default function ChatbotDrawer({ isOpen, onClose, user }: ChatbotDrawerPr
               <div className="flex flex-col gap-2.5 w-full">
                 <button
                   onClick={() => handleSendMessage("What we can do ?")}
-                  className="w-fit text-left px-4 py-2 bg-zinc-800 hover:bg-zinc-750 border border-zinc-700/50 text-white text-[11px] font-sans font-medium rounded-full transition-colors cursor-pointer max-w-[240px]"
+                  className="w-fit text-left px-4 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-[11px] font-sans font-medium rounded-full transition-colors cursor-pointer max-w-[240px] shadow-xs"
                 >
                   What we can do ?
                 </button>
                 <button
                   onClick={() => handleSendMessage("What kind of question you can ask ?")}
-                  className="w-fit text-left px-4 py-2 bg-zinc-800 hover:bg-zinc-750 border border-zinc-700/50 text-white text-[11px] font-sans font-medium rounded-full transition-colors cursor-pointer max-w-[260px]"
+                  className="w-fit text-left px-4 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-[11px] font-sans font-medium rounded-full transition-colors cursor-pointer max-w-[260px] shadow-xs"
                 >
                   What kind of question you can ask ?
                 </button>
@@ -294,15 +295,15 @@ export default function ChatbotDrawer({ isOpen, onClose, user }: ChatbotDrawerPr
                   }`}
                 >
                   <div
-                    className={`p-3 rounded-2xl text-[11px] font-sans leading-relaxed break-words whitespace-pre-wrap ${
+                    className={`p-3 rounded-2xl text-[11px] font-sans leading-relaxed break-words whitespace-pre-wrap shadow-sm ${
                       msg.sender === "user"
-                        ? "bg-red-500 text-white rounded-tr-none"
-                        : "bg-zinc-800 text-neutral-200 rounded-tl-none border border-zinc-700/50"
+                        ? "bg-red-600 text-white rounded-tr-none border border-red-700"
+                        : "bg-white text-slate-700 rounded-tl-none border border-slate-200"
                     }`}
                   >
                     {renderMessageContent(msg.text)}
                   </div>
-                  <span className="text-[8px] text-gray-500 font-mono mt-1 px-1">
+                  <span className="text-[8px] text-slate-400 font-mono mt-1 px-1 font-medium">
                     {msg.timestamp}
                   </span>
                 </div>
@@ -313,19 +314,19 @@ export default function ChatbotDrawer({ isOpen, onClose, user }: ChatbotDrawerPr
         </div>
 
         {/* Bottom Input Area */}
-        <div className="p-4 border-t border-zinc-850 bg-neutral-900/50">
-          <div className="w-full bg-neutral-950 rounded-[20px] border border-zinc-800 p-3 flex flex-col justify-between relative focus-within:border-zinc-700 transition-colors">
+        <div className="p-4 border-t border-slate-200 bg-white">
+          <div className="w-full bg-slate-50 rounded-[20px] border border-slate-200 p-3 flex flex-col justify-between relative focus-within:border-red-400 focus-within:ring-1 focus-within:ring-red-400/50 transition-all shadow-xs">
             
             {/* Draft Attachment Preview */}
             {draftedFile && (
-              <div className="flex items-center justify-between bg-zinc-850/60 border border-zinc-800 rounded-xl px-3 py-1.5 mb-2 text-[10px] text-zinc-300">
+              <div className="flex items-center justify-between bg-red-50/80 border border-red-100 rounded-xl px-3 py-1.5 mb-2 text-[10px] text-slate-700 font-medium">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-red-400">📄</span>
+                  <span className="text-red-600">📄</span>
                   <span className="truncate max-w-[180px] font-mono">{draftedFile.name}</span>
                 </div>
                 <button 
                   onClick={() => setDraftedFile(null)} 
-                  className="text-neutral-500 hover:text-red-400 transition-colors ml-2 cursor-pointer font-bold"
+                  className="text-slate-400 hover:text-red-600 transition-colors ml-2 cursor-pointer font-bold"
                   title="Remove attachment"
                 >
                   ✕
@@ -338,7 +339,7 @@ export default function ChatbotDrawer({ isOpen, onClose, user }: ChatbotDrawerPr
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="w-full bg-transparent text-white text-xs placeholder-zinc-600 focus:outline-none resize-none h-12 leading-relaxed"
+              className="w-full bg-transparent text-slate-700 text-xs placeholder-slate-400 focus:outline-none resize-none h-12 leading-relaxed"
             />
             <div className="flex justify-between items-center mt-1">
               {/* Hidden file input */}
@@ -359,7 +360,7 @@ export default function ChatbotDrawer({ isOpen, onClose, user }: ChatbotDrawerPr
               {/* Paperclip upload button */}
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="p-1.5 rounded-full transition-colors flex items-center justify-center cursor-pointer bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700"
+                className="p-1.5 rounded-full transition-colors flex items-center justify-center cursor-pointer bg-slate-200/50 text-slate-500 hover:text-red-600 hover:bg-red-50"
                 title="Attach PDF file"
               >
                 <svg
@@ -369,7 +370,7 @@ export default function ChatbotDrawer({ isOpen, onClose, user }: ChatbotDrawerPr
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
-                  strokeWidth="2"
+                  strokeWidth="2.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 >
@@ -379,8 +380,8 @@ export default function ChatbotDrawer({ isOpen, onClose, user }: ChatbotDrawerPr
 
               <button
                 onClick={() => handleSendMessage(inputText)}
-                className={`p-1.5 rounded-full transition-colors flex items-center justify-center cursor-pointer ${
-                  inputText.trim() || draftedFile ? "bg-red-500 text-white hover:bg-red-600" : "text-neutral-700"
+                className={`p-1.5 rounded-full transition-all flex items-center justify-center cursor-pointer shadow-sm ${
+                  inputText.trim() || draftedFile ? "bg-red-600 text-white hover:bg-red-700" : "bg-slate-100 text-slate-300 shadow-none"
                 }`}
                 disabled={!inputText.trim() && !draftedFile}
                 title="Send message"

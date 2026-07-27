@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useAppStore } from '@/src/lib/store';
 import {
   ChevronRight,
@@ -10,8 +10,10 @@ import {
   LogOut,
   ShieldCheck,
   Wrench,
+  Bot,
 } from 'lucide-react';
 import { ActiveTab } from './Sidebar';
+import ChatbotDrawer from './ChatbotDrawer';
 
 interface HeaderProps {
   activeTab: ActiveTab;
@@ -20,6 +22,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ activeTab, onOpenCart }) => {
   const { session, logout, cart } = useAppStore();
+  const [isChatbotOpen, setIsChatbotOpen] = useState(false);
 
   const cartTotalQty = cart.reduce((acc, curr) => acc + curr.quantity, 0);
 
@@ -108,6 +111,19 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, onOpenCart }) => {
           </div>
         )}
 
+
+        {/* AI Chatbot Button (Only for TOOLCRIB role) */}
+        {session.role === 'TOOLCRIB' && (
+          <button
+            onClick={() => setIsChatbotOpen(true)}
+            className="p-2 px-3 bg-indigo-50 text-indigo-700 rounded-xl hover:bg-indigo-100 transition-all border border-indigo-200 flex items-center space-x-2 font-bold text-xs shadow-xs"
+            title="AI Copilot"
+          >
+            <Bot className="w-4 h-4 text-indigo-600" />
+            <span className="hidden sm:inline">AI Copilot</span>
+          </button>
+        )}
+
         {/* Logout Quick Button */}
         <button
           onClick={logout}
@@ -117,6 +133,15 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, onOpenCart }) => {
           <LogOut className="w-4.5 h-4.5" />
         </button>
       </div>
+
+      {/* Render Chatbot Drawer */}
+      {session.role === 'TOOLCRIB' && (
+        <ChatbotDrawer 
+          isOpen={isChatbotOpen} 
+          onClose={() => setIsChatbotOpen(false)} 
+          user={session} 
+        />
+      )}
     </header>
   );
 };
