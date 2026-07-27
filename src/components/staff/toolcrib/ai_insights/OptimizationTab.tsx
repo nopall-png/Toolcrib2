@@ -20,18 +20,18 @@ export const OptimizationTab = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div>
-          <h3 className="font-bold text-slate-800 text-lg">Peluang Optimasi Inventaris</h3>
-          <p className="text-xs text-slate-500 mt-1">Rekomendasi tindakan untuk barang Overstock, Understock, dan Slow-Moving (C-Z class).</p>
+          <h3 className="font-bold text-slate-800 text-2xl">Peluang Optimasi Inventaris</h3>
+          <p className="text-base text-slate-500 mt-2">Rekomendasi tindakan untuk barang Overstock, Understock, dan Slow-Moving (C-Z class).</p>
         </div>
         
-        <div className="flex items-center space-x-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl">
-          <Filter className="w-4 h-4 text-slate-400" />
+        <div className="flex items-center space-x-3 bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl">
+          <Filter className="w-6 h-6 text-slate-400" />
           <select 
             value={filterAction} 
             onChange={(e) => setFilterAction(e.target.value)}
-            className="bg-transparent text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
+            className="bg-transparent text-lg font-bold text-slate-700 focus:outline-none cursor-pointer"
           >
             <option value="ALL">Semua Action</option>
             <option value="OVERSTOCK">OVERSTOCK</option>
@@ -41,38 +41,38 @@ export const OptimizationTab = () => {
         </div>
       </div>
       
-      <div className="overflow-x-auto border border-slate-200 rounded-xl">
-        <table className="w-full text-left text-sm whitespace-nowrap">
-          <thead className="bg-slate-50 text-slate-600 font-semibold text-xs border-b border-slate-200">
+      <div className="overflow-x-auto border border-slate-200 rounded-xl mt-6">
+        <table className="w-full text-left text-xl whitespace-nowrap">
+          <thead className="bg-slate-50 text-slate-600 font-semibold text-lg border-b border-slate-200">
             <tr>
-              <th className="p-4">SKU</th>
-              <th className="p-4">Deskripsi</th>
-              <th className="p-4">Action</th>
-              <th className="p-4 text-right">Excess Qty</th>
-              <th className="p-4 text-right">Nilai Kelebihan (Rp)</th>
-              <th className="p-4 text-right">Shortage Qty</th>
-              <th className="p-4 text-right">Nilai Kekurangan (Rp)</th>
+              <th className="p-6">SKU</th>
+              <th className="p-6">Deskripsi</th>
+              <th className="p-6">Action</th>
+              <th className="p-6 text-right">Excess Qty</th>
+              <th className="p-6 text-right">Nilai Kelebihan (Rp)</th>
+              <th className="p-6 text-right">Shortage Qty</th>
+              <th className="p-6 text-right">Nilai Kekurangan (Rp)</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {filteredOpts.map((item, idx) => (
               <tr key={idx} className="hover:bg-slate-50">
-                <td className="p-4 font-bold text-slate-700">{item.sku}</td>
-                <td className="p-4 text-slate-600">{item.desc}</td>
-                <td className="p-4">
-                  <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${
+                <td className="p-6 font-bold text-slate-700">{item.sku}</td>
+                <td className="p-6 text-slate-600">{item.desc}</td>
+                <td className="p-6">
+                  <span className={`px-4 py-2 rounded-full text-sm font-bold ${
                     item.action === 'OVERSTOCK' ? 'bg-amber-100 text-amber-700' :
                     item.action === 'UNDERSTOCK' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-700'
                   }`}>
                     {item.action}
                   </span>
                 </td>
-                <td className="p-4 text-right text-amber-600 font-bold">{item.excessQty > 0 ? item.excessQty : '-'}</td>
-                <td className="p-4 text-right text-amber-600">
+                <td className="p-6 text-right text-amber-600 font-bold">{item.excessQty > 0 ? item.excessQty : '-'}</td>
+                <td className="p-6 text-right text-amber-600">
                   {item.excessVal > 0 ? item.excessVal.toLocaleString('id-ID') : '-'}
                 </td>
-                <td className="p-4 text-right text-red-600 font-bold">{item.shortageQty > 0 ? item.shortageQty : '-'}</td>
-                <td className="p-4 text-right text-red-600">
+                <td className="p-6 text-right text-red-600 font-bold">{item.shortageQty > 0 ? item.shortageQty : '-'}</td>
+                <td className="p-6 text-right text-red-600">
                   {item.shortageVal > 0 ? item.shortageVal.toLocaleString('id-ID') : '-'}
                 </td>
               </tr>

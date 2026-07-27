@@ -20,18 +20,18 @@ export const CriticalSparesTab = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div>
-          <h3 className="font-bold text-slate-800 text-lg">Klasifikasi Kekritisan Suku Cadang</h3>
-          <p className="text-xs text-slate-500 mt-1">Menghitung skor kekritisan (Usage 35%, Lead Time 25%, Machine Impact 40%).</p>
+          <h3 className="font-bold text-slate-800 text-2xl">Klasifikasi Kekritisan Suku Cadang</h3>
+          <p className="text-base text-slate-500 mt-2">Menghitung skor kekritisan (Usage 35%, Lead Time 25%, Machine Impact 40%).</p>
         </div>
         
-        <div className="flex items-center space-x-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl">
-          <Filter className="w-4 h-4 text-slate-400" />
+        <div className="flex items-center space-x-3 bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl">
+          <Filter className="w-6 h-6 text-slate-400" />
           <select 
             value={filterClass} 
             onChange={(e) => setFilterClass(e.target.value)}
-            className="bg-transparent text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
+            className="bg-transparent text-lg font-bold text-slate-700 focus:outline-none cursor-pointer"
           >
             <option value="ALL">Semua Class</option>
             <option value="CRITICAL">CRITICAL</option>
@@ -41,30 +41,30 @@ export const CriticalSparesTab = () => {
         </div>
       </div>
       
-      <div className="overflow-x-auto border border-slate-200 rounded-xl">
-        <table className="w-full text-left text-sm whitespace-nowrap">
-          <thead className="bg-slate-50 text-slate-600 font-semibold text-xs border-b border-slate-200">
+      <div className="overflow-x-auto border border-slate-200 rounded-xl mt-6">
+        <table className="w-full text-left text-xl whitespace-nowrap">
+          <thead className="bg-slate-50 text-slate-600 font-semibold text-lg border-b border-slate-200">
             <tr>
-              <th className="p-4">SKU</th>
-              <th className="p-4">Deskripsi</th>
-              <th className="p-4 text-center">Usage Score</th>
-              <th className="p-4 text-center">LT Score</th>
-              <th className="p-4 text-center">Machine Score</th>
-              <th className="p-4 text-center">Total Score</th>
-              <th className="p-4">Class</th>
+              <th className="p-6">SKU</th>
+              <th className="p-6">Deskripsi</th>
+              <th className="p-6 text-center">Usage Score</th>
+              <th className="p-6 text-center">LT Score</th>
+              <th className="p-6 text-center">Machine Score</th>
+              <th className="p-6 text-center">Total Score</th>
+              <th className="p-6">Class</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {filteredSpares.map((item, idx) => (
               <tr key={idx} className="hover:bg-slate-50">
-                <td className="p-4 font-bold text-slate-700">{item.sku}</td>
-                <td className="p-4 text-slate-600">{item.desc}</td>
-                <td className="p-4 text-center text-slate-600">{item.usage}</td>
-                <td className="p-4 text-center text-slate-600">{item.lt}</td>
-                <td className="p-4 text-center text-slate-600">{item.machine}</td>
-                <td className="p-4 text-center font-bold">{item.score}</td>
-                <td className="p-4">
-                  <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${
+                <td className="p-6 font-bold text-slate-700">{item.sku}</td>
+                <td className="p-6 text-slate-600">{item.desc}</td>
+                <td className="p-6 text-center text-slate-600">{item.usage}</td>
+                <td className="p-6 text-center text-slate-600">{item.lt}</td>
+                <td className="p-6 text-center text-slate-600">{item.machine}</td>
+                <td className="p-6 text-center font-bold">{item.score}</td>
+                <td className="p-6">
+                  <span className={`px-4 py-2 rounded-full text-sm font-bold ${
                     item.class === 'CRITICAL' ? 'bg-red-100 text-red-700' :
                     item.class === 'IMPORTANT' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'
                   }`}>

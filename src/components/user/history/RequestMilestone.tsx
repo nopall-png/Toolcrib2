@@ -33,11 +33,11 @@ export const RequestMilestone: React.FC<RequestMilestoneProps> = ({ status }) =>
   return (
     <div className="w-full py-4 relative">
       {/* Background Line */}
-      <div className="absolute top-7 left-[10%] right-[10%] h-1 bg-slate-200 rounded-full" />
+      <div className="absolute top-9 left-[10%] right-[10%] h-2 bg-slate-200 rounded-full" />
 
       {/* Progress Line */}
       <div 
-        className={`absolute top-7 left-[10%] h-1 rounded-full transition-all duration-500 ${isRejected ? 'bg-red-500' : 'bg-emerald-500'}`}
+        className={`absolute top-9 left-[10%] h-2 rounded-full transition-all duration-500 ${isRejected ? 'bg-red-500' : 'bg-emerald-500'}`}
         style={{ width: currentStepIndex === 0 ? '0%' : currentStepIndex === 1 ? '40%' : '80%' }}
       />
 
@@ -62,11 +62,11 @@ export const RequestMilestone: React.FC<RequestMilestoneProps> = ({ status }) =>
           return (
             <div key={step.key} className="flex flex-col items-center w-1/3">
               <div 
-                className={`w-7 h-7 rounded-full flex items-center justify-center transition-all shadow-sm ${bgColor} ${isCurrent ? 'ring-4 ring-slate-50 scale-110' : ''}`}
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-sm ${bgColor} ${isCurrent ? 'ring-4 ring-slate-50 scale-110' : ''}`}
               >
-                <Icon className={`w-3.5 h-3.5 ${iconColor}`} />
+                <Icon className={`w-5 h-5 ${iconColor}`} />
               </div>
-              <span className={`text-[10px] font-bold mt-2 text-center ${textColor}`}>
+              <span className={`text-sm font-bold mt-3 text-center ${textColor}`}>
                 {step.label}
               </span>
             </div>

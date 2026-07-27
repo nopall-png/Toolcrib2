@@ -10,15 +10,15 @@ interface NewToolSpecFieldsProps {
 }
 
 export const NewToolSpecFields: React.FC<NewToolSpecFieldsProps> = ({ item, onUpdateField }) => {
-  const inputClass = "w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-md text-sm font-medium focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-400";
-  const labelClass = "block text-xs font-semibold text-slate-700 mb-1.5";
+  const inputClass = "w-full px-5 py-4 bg-white border border-slate-300 rounded-xl text-lg font-medium focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-slate-400";
+  const labelClass = "block text-base font-semibold text-slate-700 mb-2";
   
   return (
     <div className="space-y-10">
       {/* SECTION 1: IDENTITAS BARANG */}
       <div className="space-y-4">
-        <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider pb-3 border-b border-slate-200 flex items-center space-x-2">
-          <Tag className="w-4 h-4 text-slate-500" />
+        <h3 className="text-2xl font-bold text-slate-900 uppercase tracking-wider pb-4 border-b border-slate-200 flex items-center space-x-3">
+          <Tag className="w-6 h-6 text-slate-500" />
           <span>1. Identitas & Informasi Barang</span>
         </h3>
 
@@ -111,8 +111,8 @@ export const NewToolSpecFields: React.FC<NewToolSpecFieldsProps> = ({ item, onUp
 
       {/* SECTION 2: STOK & HARGA */}
       <div className="space-y-4">
-        <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider pb-3 border-b border-slate-200 flex items-center space-x-2">
-          <DollarSign className="w-4 h-4 text-slate-500" />
+        <h3 className="text-2xl font-bold text-slate-900 uppercase tracking-wider pb-4 border-b border-slate-200 flex items-center space-x-3">
+          <DollarSign className="w-6 h-6 text-slate-500" />
           <span>2. Jumlah Stok, Batas & Nilai Aset</span>
         </h3>
 
@@ -185,7 +185,7 @@ export const NewToolSpecFields: React.FC<NewToolSpecFieldsProps> = ({ item, onUp
               type="text"
               value={`Rp ${(item.unitPrice * item.stock).toLocaleString('id-ID')}`}
               disabled
-              className="w-full px-3.5 py-2.5 bg-slate-100 border border-slate-200 rounded-md text-sm font-bold text-slate-500 cursor-not-allowed"
+              className="w-full px-5 py-4 bg-slate-100 border border-slate-200 rounded-xl text-lg font-bold text-slate-500 cursor-not-allowed"
             />
           </div>
         </div>
@@ -193,8 +193,8 @@ export const NewToolSpecFields: React.FC<NewToolSpecFieldsProps> = ({ item, onUp
 
       {/* SECTION 3: LOKASI GUDANG */}
       <div className="space-y-4">
-        <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider pb-3 border-b border-slate-200 flex items-center space-x-2">
-          <MapPin className="w-4 h-4 text-slate-500" />
+        <h3 className="text-2xl font-bold text-slate-900 uppercase tracking-wider pb-4 border-b border-slate-200 flex items-center space-x-3">
+          <MapPin className="w-6 h-6 text-slate-500" />
           <span>3. Lokasi Rak & Gudang</span>
         </h3>
 
@@ -233,8 +233,8 @@ export const NewToolSpecFields: React.FC<NewToolSpecFieldsProps> = ({ item, onUp
 
       {/* SECTION 4: SUPPLIER */}
       <div className="space-y-4">
-        <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider pb-3 border-b border-slate-200 flex items-center space-x-2">
-          <ShieldCheck className="w-4 h-4 text-slate-500" />
+        <h3 className="text-2xl font-bold text-slate-900 uppercase tracking-wider pb-4 border-b border-slate-200 flex items-center space-x-3">
+          <ShieldCheck className="w-6 h-6 text-slate-500" />
           <span>4. Supplier & Inspeksi</span>
         </h3>
 

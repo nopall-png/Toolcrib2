@@ -28,18 +28,18 @@ export const NonStandardToolForm: React.FC<NonStandardToolFormProps> = ({
   return (
     <div className={disabled ? 'opacity-50 pointer-events-none transition-opacity' : 'opacity-100 transition-opacity'}>
       <div className="flex items-center space-x-2 pb-3 mb-4 border-b border-slate-200 mt-6">
-        <div className="p-2 bg-red-100 text-red-600 rounded-lg">
-          <Wrench className="w-5 h-5" />
+        <div className="p-4 bg-red-100 text-red-600 rounded-xl">
+          <Wrench className="w-8 h-8" />
         </div>
         <div>
-          <h3 className="font-extrabold text-slate-900 text-base">Langkah 3: Detail Barang Baru</h3>
-          <p className="text-xs text-slate-500">Isi spesifikasi barang dengan lengkap dan jelas.</p>
+          <h3 className="font-extrabold text-slate-900 text-2xl">Langkah 3: Detail Barang Baru</h3>
+          <p className="text-base text-slate-500 mt-1">Isi spesifikasi barang dengan lengkap dan jelas.</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-1.5 md:col-span-2">
-          <label className="block text-xs font-bold text-slate-700">Nama Barang <span className="text-red-500">*</span></label>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-6">
+        <div className="space-y-3 md:col-span-2">
+          <label className="block text-lg font-bold text-slate-700">Nama Barang <span className="text-red-500">*</span></label>
           <div className="relative">
             <input
               type="text"
@@ -47,14 +47,14 @@ export const NonStandardToolForm: React.FC<NonStandardToolFormProps> = ({
               value={formData.toolName}
               onChange={handleFormChange}
               placeholder="Contoh: Digital Torque Wrench 1/2 inch"
-              className="w-full p-2.5 pl-10 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-red-500"
+              className="w-full p-4 pl-14 bg-slate-50 border border-slate-200 rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-red-500"
             />
-            <Wrench className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+            <Wrench className="w-6 h-6 text-slate-400 absolute left-4 top-4" />
           </div>
         </div>
 
-        <div className="space-y-1.5 md:col-span-2">
-          <label className="block text-xs font-bold text-slate-700">Link Gambar / Referensi <span className="text-red-500">*</span></label>
+        <div className="space-y-3 md:col-span-2">
+          <label className="block text-lg font-bold text-slate-700">Link Gambar / Referensi <span className="text-red-500">*</span></label>
           <div className="relative">
             <input
               type="url"
@@ -62,14 +62,14 @@ export const NonStandardToolForm: React.FC<NonStandardToolFormProps> = ({
               value={formData.imageUrl}
               onChange={handleFormChange}
               placeholder="https://contoh.com/gambar-barang.jpg"
-              className="w-full p-2.5 pl-10 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-red-500"
+              className="w-full p-4 pl-14 bg-slate-50 border border-slate-200 rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-red-500"
             />
-            <ImageIcon className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+            <ImageIcon className="w-6 h-6 text-slate-400 absolute left-4 top-4" />
           </div>
         </div>
 
-        <div className="space-y-1.5">
-          <label className="block text-xs font-bold text-slate-700">Nama Vendor / Toko <span className="text-red-500">*</span></label>
+        <div className="space-y-3">
+          <label className="block text-lg font-bold text-slate-700">Nama Vendor / Toko <span className="text-red-500">*</span></label>
           <div className="relative">
             <input
               type="text"
@@ -77,14 +77,14 @@ export const NonStandardToolForm: React.FC<NonStandardToolFormProps> = ({
               value={formData.vendorName}
               onChange={handleFormChange}
               placeholder="Contoh: PT Kawan Lama"
-              className="w-full p-2.5 pl-10 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-red-500"
+              className="w-full p-4 pl-14 bg-slate-50 border border-slate-200 rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-red-500"
             />
-            <Building className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+            <Building className="w-6 h-6 text-slate-400 absolute left-4 top-4" />
           </div>
         </div>
 
-        <div className="space-y-1.5">
-          <label className="block text-xs font-bold text-slate-700">Estimasi Harga (Satuan) <span className="text-red-500">*</span></label>
+        <div className="space-y-3">
+          <label className="block text-lg font-bold text-slate-700">Estimasi Harga (Satuan) <span className="text-red-500">*</span></label>
           <div className="relative">
             <input
               type="number"
@@ -93,14 +93,14 @@ export const NonStandardToolForm: React.FC<NonStandardToolFormProps> = ({
               onChange={handleFormChange}
               placeholder="Contoh: 1500000"
               min="1"
-              className="w-full p-2.5 pl-10 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-red-500"
+              className="w-full p-4 pl-14 bg-slate-50 border border-slate-200 rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-red-500"
             />
-            <DollarSign className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+            <DollarSign className="w-6 h-6 text-slate-400 absolute left-4 top-4" />
           </div>
         </div>
 
-        <div className="space-y-1.5">
-          <label className="block text-xs font-bold text-slate-700">Kontak Vendor <span className="text-red-500">*</span></label>
+        <div className="space-y-3">
+          <label className="block text-lg font-bold text-slate-700">Kontak Vendor <span className="text-red-500">*</span></label>
           <div className="relative">
             <input
               type="text"
@@ -108,14 +108,14 @@ export const NonStandardToolForm: React.FC<NonStandardToolFormProps> = ({
               value={formData.contact}
               onChange={handleFormChange}
               placeholder="No HP / Email Vendor"
-              className="w-full p-2.5 pl-10 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-red-500"
+              className="w-full p-4 pl-14 bg-slate-50 border border-slate-200 rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-red-500"
             />
-            <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+            <Phone className="w-6 h-6 text-slate-400 absolute left-4 top-4" />
           </div>
         </div>
 
-        <div className="space-y-1.5">
-          <label className="block text-xs font-bold text-slate-700">Ukuran / Dimensi Tools <span className="text-red-500">*</span></label>
+        <div className="space-y-3">
+          <label className="block text-lg font-bold text-slate-700">Ukuran / Dimensi Tools <span className="text-red-500">*</span></label>
           <div className="relative">
             <input
               type="text"
@@ -123,21 +123,21 @@ export const NonStandardToolForm: React.FC<NonStandardToolFormProps> = ({
               value={formData.dimensions}
               onChange={handleFormChange}
               placeholder="Contoh: 1/2 inch drive, 50cm"
-              className="w-full p-2.5 pl-10 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-red-500"
+              className="w-full p-4 pl-14 bg-slate-50 border border-slate-200 rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-red-500"
             />
-            <Ruler className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+            <Ruler className="w-6 h-6 text-slate-400 absolute left-4 top-4" />
           </div>
         </div>
       </div>
 
       {/* Submit Action Button */}
-      <div className="pt-6 mt-6 border-t border-slate-200">
+      <div className="pt-8 mt-10 border-t border-slate-200">
         <button
           type="submit"
           disabled={!canSubmit}
-          className="w-full py-3.5 red-gradient-btn text-white font-bold rounded-xl text-xs flex items-center justify-center space-x-2 shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full py-5 red-gradient-btn text-white font-bold rounded-2xl text-xl flex items-center justify-center space-x-3 shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <Send className="w-4 h-4" />
+          <Send className="w-6 h-6" />
           <span>Kirim Request Non-Standard</span>
         </button>
       </div>

@@ -17,18 +17,18 @@ export const DuplicateDetectionTab = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div>
-          <h3 className="font-bold text-slate-800 text-lg">Indikasi Duplikasi Barang (Semantic NLP)</h3>
-          <p className="text-xs text-slate-500 mt-1">Mendeteksi kemiripan deskripsi barang menggunakan model SentenceTransformer.</p>
+          <h3 className="font-bold text-slate-800 text-2xl">Indikasi Duplikasi Barang (Semantic NLP)</h3>
+          <p className="text-base text-slate-500 mt-2">Mendeteksi kemiripan deskripsi barang menggunakan model SentenceTransformer.</p>
         </div>
         
-        <div className="flex items-center space-x-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl">
-          <Filter className="w-4 h-4 text-slate-400" />
+        <div className="flex items-center space-x-3 bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl">
+          <Filter className="w-6 h-6 text-slate-400" />
           <select 
             value={filterThreshold} 
             onChange={(e) => setFilterThreshold(Number(e.target.value))}
-            className="bg-transparent text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
+            className="bg-transparent text-lg font-bold text-slate-700 focus:outline-none cursor-pointer"
           >
             <option value={0}>Semua Kecocokan (&gt;0%)</option>
             <option value={80}>Sangat Mirip (&gt;80%)</option>
@@ -37,44 +37,44 @@ export const DuplicateDetectionTab = () => {
         </div>
       </div>
       
-      <div className="overflow-x-auto border border-slate-200 rounded-xl">
-        <table className="w-full text-left text-sm whitespace-nowrap">
-          <thead className="bg-slate-50 text-slate-600 font-semibold text-xs border-b border-slate-200">
+      <div className="overflow-x-auto border border-slate-200 rounded-xl mt-6">
+        <table className="w-full text-left text-xl whitespace-nowrap">
+          <thead className="bg-slate-50 text-slate-600 font-semibold text-lg border-b border-slate-200">
             <tr>
-              <th className="p-4">Item 1 (Terindikasi)</th>
-              <th className="p-4">Item 2 (Mirip/Duplikat)</th>
-              <th className="p-4">Kemiripan</th>
-              <th className="p-4">Aksi</th>
+              <th className="p-6">Item 1 (Terindikasi)</th>
+              <th className="p-6">Item 2 (Mirip/Duplikat)</th>
+              <th className="p-6">Kemiripan</th>
+              <th className="p-6">Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {filteredDuplicates.map((item, idx) => (
               <tr key={idx} className="hover:bg-slate-50">
-                <td className="p-4">
-                  <div className="flex items-center space-x-3">
-                    <img src={item.img1} alt={item.desc1} className="w-10 h-10 rounded-lg object-cover border border-slate-200 shrink-0" />
+                <td className="p-6">
+                  <div className="flex items-center space-x-4">
+                    <img src={item.img1} alt={item.desc1} className="w-16 h-16 rounded-xl object-cover border border-slate-200 shrink-0" />
                     <div>
                       <span className="font-bold text-slate-700 block">{item.sku1}</span>
-                      <span className="text-slate-500 text-xs">{item.desc1}</span>
+                      <span className="text-slate-500 text-base">{item.desc1}</span>
                     </div>
                   </div>
                 </td>
-                <td className="p-4">
-                  <div className="flex items-center space-x-3">
-                    <img src={item.img2} alt={item.desc2} className="w-10 h-10 rounded-lg object-cover border border-slate-200 shrink-0" />
+                <td className="p-6">
+                  <div className="flex items-center space-x-4">
+                    <img src={item.img2} alt={item.desc2} className="w-16 h-16 rounded-xl object-cover border border-slate-200 shrink-0" />
                     <div>
                       <span className="font-bold text-slate-700 block">{item.sku2}</span>
-                      <span className="text-slate-500 text-xs">{item.desc2}</span>
+                      <span className="text-slate-500 text-base">{item.desc2}</span>
                     </div>
                   </div>
                 </td>
-                <td className="p-4">
-                  <span className="px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs font-bold">
+                <td className="p-6">
+                  <span className="px-4 py-2 bg-red-100 text-red-700 rounded-full text-base font-bold">
                     {item.score}%
                   </span>
                 </td>
-                <td className="p-4">
-                  <button className="text-xs text-indigo-600 font-bold hover:underline">Merge SKU</button>
+                <td className="p-6">
+                  <button className="text-lg text-indigo-600 font-bold hover:underline">Merge SKU</button>
                 </td>
               </tr>
             ))}
