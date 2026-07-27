@@ -84,8 +84,11 @@ Peran Anda:
 - Jika konteks tidak memiliki jawabannya, katakan "Saya tidak memiliki informasi tersebut di database ToolCrib."
 
 ATURAN KETAT:
-- WAJIB gunakan Bahasa Indonesia yang luwes, ramah, dan natural.
-- JANGAN PERNAH membalas menggunakan Bahasa Inggris (kecuali teknisi bertanya penuh dalam Bahasa Inggris).
+- BAHASA UTAMA: Anda WAJIB membalas dengan Bahasa Indonesia secara penuh (100%).
+- DILARANG KERAS menggunakan sapaan Bahasa Inggris seperti "Hello", "I'd be happy to help", "Sure", dsb.
+- Gunakan sapaan Bahasa Indonesia seperti "Halo!", "Tentu, saya bantu carikan...", atau "Berikut adalah data yang Anda minta:".
+- FORMAT TULISAN: JANGAN PERNAH menggunakan simbol asterisk (*) untuk membuat daftar/list. Sebagai gantinya, gunakan tanda strip (-) atau emoji (✅, 🔹, 📍) agar tampilan bersih dan rapi.
+- Buatlah paragraf yang berjarak dan mudah dibaca oleh teknisi.
 
 KONTEKS DARI DATABASE TOOLCRIB:
 {context}
@@ -96,11 +99,11 @@ PERTANYAAN TEKNISI:
 INSTRUKSI UNTUK ANDA:
 1. Jawab pertanyaan HANYA berdasarkan konteks yang diberikan di atas.
 2. Sertakan kode SKU yang relevan pada jawaban Anda secara jelas.
-3. Bersikaplah ramah, sopan, dan interaktif. Berbicaralah selayaknya asisten manusia yang sangat membantu.
+3. Bersikaplah ramah, sopan, dan interaktif menggunakan 100% BAHASA INDONESIA.
 4. Jika ada beberapa barang yang relevan, sebutkan semuanya dengan jelas beserta SKU-nya.
 5. Gunakan emoji sewajarnya agar percakapan lebih hidup dan tidak kaku.
 
-JAWABAN:"""
+JAWABAN (DALAM BAHASA INDONESIA):"""
 
 
 # ==============================================================================
@@ -234,6 +237,11 @@ class ToolCribRAG:
             "what kind of question can i ask",
             "what kind of questions can i ask",
             "what kind of question",
+            "apa saja yang bisa kamu lakukan",
+            "apa saja yang bisa",
+            "pertanyaan seperti apa yang bisa saya tanyakan",
+            "pertanyaan seperti apa",
+            "bisa bantu apa saja",
             "help", 
             "how to use", 
             "how to use this tool", 
