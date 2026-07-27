@@ -4,9 +4,9 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 class DuplicateDetector:
     def __init__(self):
-        print("⚙️ Memuat Model NLP Semantik untuk Deteksi Duplikat...")
+        print("[INFO] Memuat Model NLP Semantik untuk Deteksi Duplikat...")
         self.nlp_model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
-        print("✅ Model NLP Semantik berhasil dimuat.")
+        print("[INFO] Model NLP Semantik berhasil dimuat.")
 
     def detect_duplicate_sku(self, df_sku: pd.DataFrame, threshold: float = 0.60) -> pd.DataFrame:
         """
