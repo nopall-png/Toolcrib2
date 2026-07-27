@@ -9,21 +9,21 @@ export const OptimizationTab = () => {
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
   const [optimizations, setOptimizations] = useState([
-    { 
+    {
       sku: INITIAL_TOOLS[4].code, desc: INITIAL_TOOLS[4].name, img: INITIAL_TOOLS[4].imageUrl,
-      action: 'OVERSTOCK', impactVal: 15 * (INITIAL_TOOLS[4].unitPrice || 50000), 
+      action: 'OVERSTOCK', impactVal: 15 * (INITIAL_TOOLS[4].unitPrice || 50000),
       recommendation: 'Kembalikan 15 unit ke Supplier atau gunakan untuk proyek internal lain.',
       isExecuted: false
     },
-    { 
+    {
       sku: INITIAL_TOOLS[2].code, desc: INITIAL_TOOLS[2].name, img: INITIAL_TOOLS[2].imageUrl,
-      action: 'UNDERSTOCK', impactVal: 5 * (INITIAL_TOOLS[2].unitPrice || 750000), 
+      action: 'UNDERSTOCK', impactVal: 5 * (INITIAL_TOOLS[2].unitPrice || 750000),
       recommendation: 'Segera pesan 5 unit untuk mencegah potensi berhentinya proyek.',
       isExecuted: false
     },
-    { 
+    {
       sku: INITIAL_TOOLS[6].code, desc: INITIAL_TOOLS[6].name, img: INITIAL_TOOLS[6].imageUrl,
-      action: 'SLOW_MOVING', impactVal: 2 * (INITIAL_TOOLS[6].unitPrice || 45000), 
+      action: 'SLOW_MOVING', impactVal: 2 * (INITIAL_TOOLS[6].unitPrice || 45000),
       recommendation: 'Barang tidak bergerak selama > 6 bulan. Lakukan audit fisik dan pertimbangkan penghapusan katalog.',
       isExecuted: false
     },
@@ -38,7 +38,7 @@ export const OptimizationTab = () => {
     const newOpts = [...optimizations];
     newOpts[idx].isExecuted = true;
     setOptimizations(newOpts);
-    
+
     setToastMsg(`Tindakan optimasi untuk ${newOpts[idx].sku} sedang diproses oleh sistem.`);
     setTimeout(() => setToastMsg(null), 4000);
   };
@@ -61,13 +61,13 @@ export const OptimizationTab = () => {
           </div>
           <p className="text-xs text-slate-500 mt-1">Rekomendasi tindakan otomatis dari AI untuk menghemat anggaran dan mencegah kerugian.</p>
         </div>
-        
-        <div className="flex items-center space-x-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl">
-          <Filter className="w-4 h-4 text-slate-400" />
-          <select 
-            value={filterAction} 
+
+        <div className="flex items-center space-x-3 bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl">
+          <Filter className="w-6 h-6 text-slate-400" />
+          <select
+            value={filterAction}
             onChange={(e) => setFilterAction(e.target.value)}
-            className="bg-transparent text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
+            className="bg-transparent text-lg font-bold text-slate-700 focus:outline-none cursor-pointer"
           >
             <option value="ALL">Semua Peluang</option>
             <option value="OVERSTOCK">📦 Kelebihan (OVERSTOCK)</option>
@@ -76,10 +76,10 @@ export const OptimizationTab = () => {
           </select>
         </div>
       </div>
-      
-      <div className="overflow-x-auto border border-slate-200 rounded-xl">
-        <table className="w-full text-left text-sm whitespace-nowrap">
-          <thead className="bg-slate-50 text-slate-600 font-semibold text-xs border-b border-slate-200">
+
+      <div className="overflow-x-auto border border-slate-200 rounded-xl mt-6">
+        <table className="w-full text-left text-xl whitespace-nowrap">
+          <thead className="bg-slate-50 text-slate-600 font-semibold text-lg border-b border-slate-200">
             <tr>
               <th className="p-4">Barang (SKU)</th>
               <th className="p-4">Status & Dampak Finansial</th>
@@ -99,20 +99,19 @@ export const OptimizationTab = () => {
                     </div>
                   </div>
                 </td>
-                
+
                 <td className="p-4">
                   <div className="flex flex-col space-y-1">
-                    <span className={`px-2 py-1 rounded-full text-[10px] font-bold w-max border ${
-                      item.action === 'OVERSTOCK' ? 'bg-amber-100 text-amber-700 border-amber-200' :
-                      item.action === 'UNDERSTOCK' ? 'bg-red-100 text-red-700 border-red-200' : 
-                      'bg-slate-100 text-slate-700 border-slate-200'
-                    }`}>
+                    <span className={`px-2 py-1 rounded-full text-[10px] font-bold w-max border ${item.action === 'OVERSTOCK' ? 'bg-amber-100 text-amber-700 border-amber-200' :
+                        item.action === 'UNDERSTOCK' ? 'bg-red-100 text-red-700 border-red-200' :
+                          'bg-slate-100 text-slate-700 border-slate-200'
+                      }`}>
                       {item.action === 'OVERSTOCK' && '📦 OVERSTOCK (Uang Tertahan)'}
                       {item.action === 'UNDERSTOCK' && '📉 UNDERSTOCK (Potensi Kerugian)'}
                       {item.action === 'SLOW_MOVING' && '🐢 SLOW MOVING (Barang Mati)'}
                     </span>
                     <span className="text-sm font-bold text-slate-700 flex items-center space-x-1 mt-1">
-                      <span className="text-xs text-slate-500 font-normal">Nilai:</span> 
+                      <span className="text-xs text-slate-500 font-normal">Nilai:</span>
                       <span>Rp {item.impactVal.toLocaleString('id-ID')}</span>
                     </span>
                   </div>
@@ -131,7 +130,7 @@ export const OptimizationTab = () => {
                       <span>Diproses</span>
                     </span>
                   ) : (
-                    <button 
+                    <button
                       onClick={() => handleExecute(idx)}
                       className="inline-flex items-center space-x-1 text-xs text-white font-bold px-3 py-1.5 bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
                     >

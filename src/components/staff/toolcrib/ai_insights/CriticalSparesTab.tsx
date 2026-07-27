@@ -5,24 +5,24 @@ import { Filter, AlertOctagon, TrendingDown, CheckCircle2, ShoppingCart, BrainCi
 import { INITIAL_TOOLS } from '@/src/lib/mock';
 
 const INITIAL_SPARES = [
-  { 
+  {
     sku: INITIAL_TOOLS[7].code, desc: INITIAL_TOOLS[7].name, img: INITIAL_TOOLS[7].imageUrl,
-    currentStock: 2, minStock: 5, 
-    riskFactor: 'Dampak Mesin Sangat Tinggi & Lead Time Lama (45 Hari)', 
+    currentStock: 2, minStock: 5,
+    riskFactor: 'Dampak Mesin Sangat Tinggi & Lead Time Lama (45 Hari)',
     class: 'CRITICAL', status: 'DANGER', isOrdered: false,
     aiScores: { usage: 80, lt: 45, machine: 100, total: 85.5 }
   },
-  { 
+  {
     sku: INITIAL_TOOLS[5].code, desc: INITIAL_TOOLS[5].name, img: INITIAL_TOOLS[5].imageUrl,
-    currentStock: 15, minStock: 10, 
-    riskFactor: 'Dampak Mesin Menengah', 
+    currentStock: 15, minStock: 10,
+    riskFactor: 'Dampak Mesin Menengah',
     class: 'IMPORTANT', status: 'SAFE', isOrdered: false,
     aiScores: { usage: 95, lt: 14, machine: 50, total: 68.2 }
   },
-  { 
+  {
     sku: INITIAL_TOOLS[3].code, desc: INITIAL_TOOLS[3].name, img: INITIAL_TOOLS[3].imageUrl,
-    currentStock: 50, minStock: 20, 
-    riskFactor: 'Barang Kebutuhan Umum (Mudah Didapat)', 
+    currentStock: 50, minStock: 20,
+    riskFactor: 'Barang Kebutuhan Umum (Mudah Didapat)',
     class: 'STANDARD', status: 'SAFE', isOrdered: false,
     aiScores: { usage: 100, lt: 3, machine: 20, total: 35.1 }
   },
@@ -42,14 +42,14 @@ export const CriticalSparesTab = () => {
   const handleEmergencyOrder = (idx: number) => {
     const newSpares = [...spares];
     const item = newSpares[idx];
-    
+
     // Ubah status menjadi sudah diorder
     item.isOrdered = true;
     setSpares(newSpares);
-    
+
     // Tampilkan notifikasi
     setToastMsg(`Purchase Order (PO) Darurat untuk ${item.sku} telah otomatis dikirim ke departemen Purchasing.`);
-    
+
     // Hilangkan notifikasi setelah 4 detik
     setTimeout(() => {
       setToastMsg(null);
@@ -58,7 +58,7 @@ export const CriticalSparesTab = () => {
 
   return (
     <div className="space-y-4">
-      
+
       {/* Notifikasi Sukses Pemesanan */}
       {toastMsg && (
         <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3 rounded-xl flex items-center space-x-2 text-sm font-bold shadow-sm animate-in fade-in slide-in-from-top-2">
@@ -75,13 +75,13 @@ export const CriticalSparesTab = () => {
           </div>
           <p className="text-xs text-slate-500 mt-1">AI memprioritaskan barang yang berisiko menghentikan produksi pabrik (*downtime*) jika kehabisan stok.</p>
         </div>
-        
-        <div className="flex items-center space-x-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl">
-          <Filter className="w-4 h-4 text-slate-400" />
-          <select 
-            value={filterClass} 
+
+        <div className="flex items-center space-x-3 bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl">
+          <Filter className="w-6 h-6 text-slate-400" />
+          <select
+            value={filterClass}
             onChange={(e) => setFilterClass(e.target.value)}
-            className="bg-transparent text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
+            className="bg-transparent text-lg font-bold text-slate-700 focus:outline-none cursor-pointer"
           >
             <option value="ALL">Semua Tingkat Kritis</option>
             <option value="CRITICAL">🔥 CRITICAL (Kritis)</option>
@@ -90,10 +90,10 @@ export const CriticalSparesTab = () => {
           </select>
         </div>
       </div>
-      
-      <div className="overflow-x-auto border border-slate-200 rounded-xl">
-        <table className="w-full text-left text-sm whitespace-nowrap">
-          <thead className="bg-slate-50 text-slate-600 font-semibold text-xs border-b border-slate-200">
+
+      <div className="overflow-x-auto border border-slate-200 rounded-xl mt-6">
+        <table className="w-full text-left text-xl whitespace-nowrap">
+          <thead className="bg-slate-50 text-slate-600 font-semibold text-lg border-b border-slate-200">
             <tr>
               <th className="p-4">Barang (SKU)</th>
               <th className="p-4">Tingkat Kekritisan</th>
@@ -115,13 +115,12 @@ export const CriticalSparesTab = () => {
                       </div>
                     </div>
                   </td>
-                  
+
                   <td className="p-4">
-                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                      item.class === 'CRITICAL' ? 'bg-red-100 text-red-700 border border-red-200' :
-                      item.class === 'IMPORTANT' ? 'bg-amber-100 text-amber-700 border border-amber-200' : 
-                      'bg-slate-100 text-slate-700 border border-slate-200'
-                    }`}>
+                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${item.class === 'CRITICAL' ? 'bg-red-100 text-red-700 border border-red-200' :
+                        item.class === 'IMPORTANT' ? 'bg-amber-100 text-amber-700 border border-amber-200' :
+                          'bg-slate-100 text-slate-700 border border-slate-200'
+                      }`}>
                       {item.class}
                     </span>
                   </td>
@@ -154,7 +153,7 @@ export const CriticalSparesTab = () => {
                           <span>PO Diproses</span>
                         </span>
                       ) : (
-                        <button 
+                        <button
                           onClick={() => handleEmergencyOrder(idx)}
                           className="flex items-center space-x-1 text-xs text-white font-bold px-3 py-1.5 bg-red-600 rounded-lg hover:bg-red-700 transition-colors shadow-sm animate-pulse"
                         >
@@ -163,7 +162,7 @@ export const CriticalSparesTab = () => {
                         </button>
                       )
                     ) : (
-                      <button 
+                      <button
                         onClick={() => setExpandedItem(expandedItem === idx ? null : idx)}
                         className="text-xs text-indigo-600 font-bold hover:underline px-3 py-1.5 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors"
                       >
@@ -182,7 +181,7 @@ export const CriticalSparesTab = () => {
                           <BrainCircuit className="w-4 h-4 text-indigo-600" />
                           <span>Rincian Kalkulasi Skor AI (Mesin Suku Cadang Kritis)</span>
                         </h4>
-                        
+
                         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                           <div className="bg-white p-3 rounded-xl border border-slate-200">
                             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Skor Penggunaan</p>
@@ -192,7 +191,7 @@ export const CriticalSparesTab = () => {
                             </div>
                             <p className="text-[10px] text-slate-400 mt-1">Bobot: 35%</p>
                           </div>
-                          
+
                           <div className="bg-white p-3 rounded-xl border border-slate-200">
                             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Skor Lead Time</p>
                             <div className="flex items-end space-x-2">
@@ -201,7 +200,7 @@ export const CriticalSparesTab = () => {
                             </div>
                             <p className="text-[10px] text-slate-400 mt-1">Bobot: 25%</p>
                           </div>
-                          
+
                           <div className="bg-white p-3 rounded-xl border border-slate-200">
                             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Skor Dampak Mesin</p>
                             <div className="flex items-end space-x-2">
@@ -222,7 +221,7 @@ export const CriticalSparesTab = () => {
                             <p className={`text-[10px] mt-1 font-bold ${item.class === 'IMPORTANT' ? 'text-amber-600' : 'text-indigo-600'}`}>=&gt; Kelas: {item.class}</p>
                           </div>
                         </div>
-                        
+
                         <p className="text-xs text-slate-500 mt-4 leading-relaxed">
                           * <strong>Insight:</strong> Meskipun skor total AI untuk barang ini adalah {item.aiScores.total}, namun karena sisa stok ({item.currentStock} unit) masih jauh di atas batas minimum keamanan ({item.minStock} unit), status barang ini dinyatakan <strong>Aman (SAFE)</strong>. Tidak diperlukan tindakan pemesanan darurat saat ini.
                         </p>
