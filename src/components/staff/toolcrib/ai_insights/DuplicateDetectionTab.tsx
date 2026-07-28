@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Filter, Info, AlertTriangle, BrainCircuit, CheckCircle2, CheckCircle } from 'lucide-react';
+import { Filter, Info, AlertTriangle, BrainCircuit, CheckCircle2, CheckCircle, Search } from 'lucide-react';
 import { INITIAL_TOOLS } from '@/src/lib/mock';
 
 type DuplicateStatus = 'PENDING' | 'MERGED';
@@ -14,11 +14,20 @@ const INITIAL_DUPLICATES = [
 
 export const DuplicateDetectionTab = () => {
   const [filterThreshold, setFilterThreshold] = useState(80);
+  const [searchTerm, setSearchTerm] = useState('');
   const [expandedItem, setExpandedItem] = useState<number | null>(null);
   const [duplicates, setDuplicates] = useState(INITIAL_DUPLICATES);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
-  const filteredDuplicates = duplicates.filter((item) => item.score >= filterThreshold);
+  const filteredDuplicates = duplicates.filter((item) => {
+    const matchesScore = item.score >= filterThreshold;
+    const searchLower = searchTerm.toLowerCase();
+    const matchesSearch = item.sku1.toLowerCase().includes(searchLower) || 
+                          item.sku2.toLowerCase().includes(searchLower) ||
+                          item.desc1.toLowerCase().includes(searchLower) ||
+                          item.desc2.toLowerCase().includes(searchLower);
+    return matchesScore && matchesSearch;
+  });
 
   const handleAction = (idx: number, actionType: 'MERGE' | 'IGNORE') => {
     const newDuplicates = [...duplicates];
@@ -62,18 +71,33 @@ export const DuplicateDetectionTab = () => {
           </div>
           <p className="text-xs text-slate-500 mt-1">AI menganalisis kemiripan nama, merek, dan spesifikasi barang untuk menemukan item yang mungkin dicatat dua kali di dalam sistem.</p>
         </div>
+        
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          {/* Search Input */}
+          <div className="flex items-center space-x-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl w-full sm:w-auto focus-within:border-indigo-400 focus-within:ring-1 focus-within:ring-indigo-400 transition-all">
+            <Search className="w-4 h-4 text-slate-400" />
+            <input 
+              type="text" 
+              placeholder="Cari SKU atau nama..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="bg-transparent text-xs font-semibold text-slate-700 focus:outline-none w-full sm:w-48 placeholder:font-normal"
+            />
+          </div>
 
-        <div className="flex items-center space-x-3 bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl">
-          <Filter className="w-6 h-6 text-slate-400" />
-          <select
-            value={filterThreshold}
-            onChange={(e) => setFilterThreshold(Number(e.target.value))}
-            className="bg-transparent text-lg font-bold text-slate-700 focus:outline-none cursor-pointer"
-          >
-            <option value={0}>Semua Kecocokan (&gt;0%)</option>
-            <option value={80}>Sangat Mirip (&gt;80%)</option>
-            <option value={90}>Identik (&gt;90%)</option>
-          </select>
+          {/* Filter Dropdown */}
+          <div className="flex items-center space-x-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl w-full sm:w-auto">
+            <Filter className="w-4 h-4 text-slate-400" />
+            <select 
+              value={filterThreshold} 
+              onChange={(e) => setFilterThreshold(Number(e.target.value))}
+              className="bg-transparent text-xs font-bold text-slate-700 focus:outline-none cursor-pointer w-full sm:w-auto"
+            >
+              <option value={0}>Semua Kecocokan (&gt;0%)</option>
+              <option value={80}>Sangat Mirip (&gt;80%)</option>
+              <option value={90}>Identik (&gt;90%)</option>
+            </select>
+          </div>
         </div>
       </div>
 
