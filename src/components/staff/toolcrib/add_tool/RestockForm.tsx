@@ -257,14 +257,39 @@ export const RestockForm: React.FC<RestockFormProps> = ({ onSuccess }) => {
             Daftar Barang Datang Yang Akan Ditambah Stoknya ({restockItems.length} Item)
           </span>
 
-          <button
-            type="button"
-            onClick={handleAddRestockRow}
-            className="px-5 py-2.5 bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 font-semibold rounded-md text-base flex items-center space-x-2 transition-all"
-          >
-            <Plus className="w-5 h-5" />
-            <span>Tambah Item Datang</span>
-          </button>
+          <div className="flex items-center space-x-3">
+            {/* Hidden File Input */}
+            <input
+              type="file"
+              accept=".pdf"
+              className="hidden"
+              ref={autoFillFileRef}
+              onChange={(e) => {
+                if (e.target.files && e.target.files[0]) {
+                  handleAutoFillFromPDF(e.target.files[0]);
+                }
+              }}
+            />
+            {/* Trigger Button */}
+            <button
+              type="button"
+              onClick={() => autoFillFileRef.current?.click()}
+              className="px-5 py-2.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 font-semibold rounded-md text-base flex items-center space-x-2 transition-all"
+              disabled={isAutoFilling}
+            >
+              <Sparkles className="w-5 h-5" />
+              <span>{isAutoFilling ? 'Memproses...' : 'AI Auto-Fill from PDF'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleAddRestockRow}
+              className="px-5 py-2.5 bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 font-semibold rounded-md text-base flex items-center space-x-2 transition-all"
+            >
+              <Plus className="w-5 h-5" />
+              <span>Tambah Item Datang</span>
+            </button>
+          </div>
         </div>
 
         <div className="flex items-center space-x-2 overflow-x-auto pb-1">

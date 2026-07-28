@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   Wrench,
   Menu,
+  Bot,
 } from 'lucide-react';
 import { ActiveTab } from './Sidebar';
 import ChatbotDrawer from './ChatbotDrawer';
@@ -22,6 +23,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ activeTab, onOpenCart }) => {
   const { session, logout, cart, isSidebarOpen, setSidebarOpen } = useAppStore();
+  const [isChatbotOpen, setIsChatbotOpen] = useState(false);
 
   const cartTotalQty = cart.reduce((acc, curr) => acc + curr.quantity, 0);
 
@@ -117,6 +119,17 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, onOpenCart }) => {
         )}
 
         <div className="w-px h-6 bg-slate-200 mx-2"></div>
+
+        {/* Chatbot Quick Button */}
+        {session.role === 'TOOLCRIB' && (
+          <button
+            onClick={() => setIsChatbotOpen(true)}
+            className="p-3 text-blue-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+            title="AI Assistant"
+          >
+            <Bot className="w-6 h-6" />
+          </button>
+        )}
 
         {/* Logout Quick Button */}
         <button

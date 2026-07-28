@@ -201,8 +201,8 @@ class ToolCribRAG:
         """
         print(f"\n[LLM] Attempting to connect to Ollama ({OLLAMA_MODEL})...")
         try:
-            from langchain_community.llms import Ollama
-            self.llm = Ollama(
+            from langchain_ollama import OllamaLLM
+            self.llm = OllamaLLM(
                 model=OLLAMA_MODEL,
                 base_url=OLLAMA_BASE_URL,
                 temperature=0.1,
