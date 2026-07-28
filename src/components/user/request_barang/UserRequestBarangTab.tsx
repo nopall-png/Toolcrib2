@@ -5,7 +5,7 @@ import { useAppStore } from '@/src/lib/store';
 import { RequesterInfoForm } from './RequesterInfoForm';
 import { ApproverSelection } from './ApproverSelection';
 import { NonStandardToolForm } from './NonStandardToolForm';
-import { DUMMY_APPROVERS } from '@/src/lib/mock';
+import { INITIAL_APPROVERS } from '@/src/lib/mock';
 
 
 interface UserRequestBarangTabProps {
@@ -56,7 +56,7 @@ export const UserRequestBarangTab: React.FC<UserRequestBarangTabProps> = ({
       return;
     }
 
-    const approverName = DUMMY_APPROVERS.find(a => a.id === selectedApprover)?.name || selectedApprover;
+    const approverName = INITIAL_APPROVERS.find(a => a.id === selectedApprover)?.name || selectedApprover;
 
     const res = submitNonStandardRequest({
       approver: approverName,

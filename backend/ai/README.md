@@ -11,6 +11,9 @@ Modul ini berisi kecerdasan buatan (AI) yang mendukung **Dashboard MRO (Maintena
    - Pembungkus REST API menggunakan FastAPI (`main.py`).
    - Mock Data Provider (`data_provider.py`) yang siap disambungkan ke *Database* PostgreSQL.
 
+> [!WARNING]
+> **Data Sintetis (Simulasi)**: Data transaksi historis (`stock_transactions`) di-generate secara sintetis untuk keperluan demo dan presentasi, karena dataset asli tidak menyediakan histori transaksi yang lengkap. Pola dan tanggal transaksi bersifat simulasi (termasuk kuantitas yang di-*generate* secara acak atau berdasarkan tren rekayasa), dan **bukan** data pemakaian aktual pabrik. Harap pertimbangkan hal ini saat mempresentasikan *forecast* dari algoritma Prophet. Apabila sistem ini sudah digunakan secara langsung di pabrik (live), biarkan model ML belajar dari data riil setidaknya selama beberapa bulan.
+
 ---
 
 ## 🧠 Cara Kerja 6 Mesin AI (Logika Bisnis)

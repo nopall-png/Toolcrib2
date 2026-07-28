@@ -1,5 +1,6 @@
 import fitz  # PyMuPDF
 import re
+import json
 from supabase import create_client, Client
 import os
 
@@ -60,6 +61,37 @@ for i in range(1, len(doc)-1):
     desc_match = re.search(r'Technical Description\s+(.*)', text_flat)
     desc = desc_match.group(1).strip() if desc_match else ""
     
+    brand_match = re.search(r'Brand\s+(.*?)\s+Model', text_flat)
+    brand = brand_match.group(1).strip() if brand_match else ""
+    
+    model_match = re.search(r'Model\s+(.*?)\s+Part Number', text_flat)
+    model = model_match.group(1).strip() if model_match else ""
+    
+    part_match = re.search(r'Part Number\s+(.*?)\s+Technical Specification', text_flat)
+    part_number = part_match.group(1).strip() if part_match else ""
+    
+    tech_spec_match = re.search(r'Technical Specification\s+(.*?)\s+Material', text_flat)
+    tech_spec = tech_spec_match.group(1).strip() if tech_spec_match else ""
+    
+    mat_match = re.search(r'Material\s+(.*?)\s+Dimension', text_flat)
+    material = mat_match.group(1).strip() if mat_match else ""
+    
+    dim_match = re.search(r'Dimension\s+(.*?)\s+Weight', text_flat)
+    dimension = dim_match.group(1).strip() if dim_match else ""
+    
+    weight_match = re.search(r'Weight\s+(.*?)\s+(?:Technical Description|$)', text_flat)
+    weight = weight_match.group(1).strip() if weight_match else ""
+    
+    technical_specs = {
+        "brand": brand,
+        "model": model,
+        "part_number": part_number,
+        "technical_specification": tech_spec,
+        "material": material,
+        "dimension": dimension,
+        "weight": weight
+    }
+    
     tools.append({
         'code': sku,
         'name': name,
@@ -69,7 +101,8 @@ for i in range(1, len(doc)-1):
         'max_stock': max_stock,
         'unit': unit,
         'location': location,
-        'description': desc
+        'description': desc,
+        'technical_specs': technical_specs
     })
 
 print(f"Mengekstrak {len(tools)} alat ukur secara akurat.")

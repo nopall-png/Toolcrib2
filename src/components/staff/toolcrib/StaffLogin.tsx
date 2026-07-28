@@ -7,12 +7,17 @@ import { ShieldAlert, Wrench, ShoppingBag, Lock, ArrowRight, Sparkles } from 'lu
 export const StaffLogin: React.FC = () => {
   const { loginStaff } = useAppStore();
   const [activeTab, setActiveTab] = useState<'TOOLCRIB' | 'PROCUREMENT'>('TOOLCRIB');
-  const [username, setUsername] = useState('admin.toolcrib');
+  const [username, setUsername] = useState('TC-001');
   const [password, setPassword] = useState('admin123');
+  const [errorMsg, setErrorMsg] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    loginStaff(activeTab);
+    setErrorMsg('');
+    const res = loginStaff(activeTab, username, password);
+    if (!res?.success) {
+      setErrorMsg(res?.message || 'Login gagal.');
+    }
   };
 
   return (
@@ -26,13 +31,20 @@ export const StaffLogin: React.FC = () => {
         </div>
       </div>
 
+      {errorMsg && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl font-medium">
+          {errorMsg}
+        </div>
+      )}
+
       {/* Role Selection Tabs */}
       <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl mb-6">
         <button
           type="button"
           onClick={() => {
             setActiveTab('TOOLCRIB');
-            setUsername('admin.toolcrib');
+            setUsername('TC-001');
+            setErrorMsg('');
           }}
           className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center space-x-1.5 ${
             activeTab === 'TOOLCRIB'
@@ -48,7 +60,8 @@ export const StaffLogin: React.FC = () => {
           type="button"
           onClick={() => {
             setActiveTab('PROCUREMENT');
-            setUsername('officer.procurement');
+            setUsername('PR-001');
+            setErrorMsg('');
           }}
           className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center space-x-1.5 ${
             activeTab === 'PROCUREMENT'
@@ -64,7 +77,7 @@ export const StaffLogin: React.FC = () => {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1">
-            {activeTab === 'TOOLCRIB' ? 'Username Staff Toolcrib' : 'Username Staff Procurement'}
+            {activeTab === 'TOOLCRIB' ? 'ID Staff Toolcrib' : 'ID Staff Procurement'}
           </label>
           <input
             type="text"
@@ -98,17 +111,15 @@ export const StaffLogin: React.FC = () => {
         </button>
       </form>
 
-      {/* Quick Demo Assist */}
-      <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
-        <span className="text-[11px] text-slate-400 flex items-center gap-1">
-          <Sparkles className="w-3 h-3 text-amber-500" /> Demo Mode Akses Cepat
+      {/* Cheat Sheet untuk Development */}
+      <div className="mt-6 pt-4 border-t border-slate-100 flex flex-col gap-2">
+        <span className="text-[11px] text-slate-400 flex items-center gap-1 font-bold">
+          <Sparkles className="w-3 h-3 text-amber-500" /> Cheat Sheet (Dev Mode)
         </span>
-        <button
-          onClick={() => loginStaff(activeTab)}
-          className="text-xs text-red-600 font-bold hover:underline"
-        >
-          Masuk Langsung &rarr;
-        </button>
+        <div className="bg-slate-50 p-3 rounded-lg text-xs font-mono text-slate-600 space-y-1 border border-slate-200">
+          <p><span className="font-bold">Toolcrib:</span> ID: TC-001 / Pass: admin123</p>
+          <p><span className="font-bold">Procurement:</span> ID: PR-001 / Pass: admin123</p>
+        </div>
       </div>
     </div>
   );

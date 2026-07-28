@@ -1,52 +1,86 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Filter, Info, AlertTriangle, BrainCircuit, CheckCircle2, CheckCircle } from 'lucide-react';
-import { INITIAL_TOOLS } from '@/src/lib/mock';
+import React, { useState, useEffect } from 'react';
+import { Filter, Info, AlertTriangle, BrainCircuit, CheckCircle2, CheckCircle, Loader2 } from 'lucide-react';
+import { fetchDuplicates } from '@/src/lib/api-ai';
 
 type DuplicateStatus = 'PENDING' | 'MERGED';
 
-const INITIAL_DUPLICATES = [
-  { sku1: INITIAL_TOOLS[0].code, desc1: INITIAL_TOOLS[0].name, img1: INITIAL_TOOLS[0].imageUrl, sku2: INITIAL_TOOLS[1].code, desc2: INITIAL_TOOLS[1].name, img2: INITIAL_TOOLS[1].imageUrl, score: 92.5, status: 'PENDING' as DuplicateStatus },
-  { sku1: INITIAL_TOOLS[5].code, desc1: INITIAL_TOOLS[5].name, img1: INITIAL_TOOLS[5].imageUrl, sku2: INITIAL_TOOLS[6].code, desc2: INITIAL_TOOLS[6].name, img2: INITIAL_TOOLS[6].imageUrl, score: 88.1, status: 'PENDING' as DuplicateStatus },
-  { sku1: INITIAL_TOOLS[3].code, desc1: INITIAL_TOOLS[3].name, img1: INITIAL_TOOLS[3].imageUrl, sku2: INITIAL_TOOLS[4].code, desc2: INITIAL_TOOLS[4].name, img2: INITIAL_TOOLS[4].imageUrl, score: 95.3, status: 'PENDING' as DuplicateStatus },
-];
+interface DuplicateItemResponse {
+  Item1_SKU: string;
+  Item1_Desc: string;
+  Item2_SKU: string;
+  Item2_Desc: string;
+  Similarity_Score: number;
+}
 
 export const DuplicateDetectionTab = () => {
   const [filterThreshold, setFilterThreshold] = useState(80);
   const [expandedItem, setExpandedItem] = useState<number | null>(null);
-  const [duplicates, setDuplicates] = useState(INITIAL_DUPLICATES);
+  const [duplicates, setDuplicates] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
-  const filteredDuplicates = duplicates.filter((item) => item.score >= filterThreshold);
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setIsLoading(true);
+        const res = await fetchDuplicates();
+        if (res.status === 'success') {
+          const mappedData = res.data.map((item: any) => ({
+            sku1: item.SKU_1,
+            desc1: item.Desc_1,
+            img1: 'https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?w=150&q=80',
+            sku2: item.SKU_2,
+            desc2: item.Desc_2,
+            img2: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=150&q=80',
+            score: (item.Similarity_Score).toFixed(1),
+            status: 'PENDING' as DuplicateStatus
+          }));
+          setDuplicates(mappedData);
+        }
+      } catch (error) {
+        console.error("Gagal memuat data duplikat", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadData();
+  }, []);
+
+  const filteredDuplicates = duplicates.filter((item) => Number(item.score) >= filterThreshold);
 
   const handleAction = (idx: number, actionType: 'MERGE' | 'IGNORE') => {
     const newDuplicates = [...duplicates];
     const targetItem = newDuplicates[idx];
 
     if (actionType === 'MERGE') {
-      // Ubah status menjadi MERGED, item tetap ada di list
       targetItem.status = 'MERGED';
       setToastMsg(`Berhasil! Data ${targetItem.sku2} dikonfirmasi sebagai duplikat dari ${targetItem.sku1}.`);
     } else {
-      // Jika diabaikan, hapus dari list karena itu adalah False Positive dari AI
       newDuplicates.splice(idx, 1);
       setToastMsg(`Diabaikan. ${targetItem.sku1} dan ${targetItem.sku2} ditandai sebagai barang berbeda (Bukan Duplikat).`);
     }
 
     setDuplicates(newDuplicates);
-    setExpandedItem(null); // Tutup panel
+    setExpandedItem(null);
 
-    // Hilangkan notifikasi setelah 4 detik
     setTimeout(() => {
       setToastMsg(null);
     }, 4000);
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+        <Loader2 className="w-10 h-10 animate-spin mb-4 text-indigo-500" />
+        <p className="font-semibold text-slate-600">AI sedang mencari kesamaan barang di seluruh gudang...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
-      
-      {/* Notifikasi Sukses Simulasi */}
       {toastMsg && (
         <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3 rounded-xl flex items-center space-x-2 text-sm font-bold shadow-sm animate-in fade-in slide-in-from-top-2">
           <CheckCircle2 className="w-5 h-5 text-emerald-500" />
@@ -103,24 +137,22 @@ export const DuplicateDetectionTab = () => {
                   <tr className={`transition-colors ${item.status === 'MERGED' ? 'bg-emerald-50/30' : 'hover:bg-slate-50'}`}>
                     <td className="p-4">
                       <div className="flex items-center space-x-3">
-                        <img src={item.img1} alt={item.desc1} className="w-10 h-10 rounded-lg object-cover border border-slate-200 shrink-0" />
                         <div>
                           <span className="font-bold text-slate-700 block">{item.sku1}</span>
-                          <span className="text-slate-500 text-xs">{item.desc1}</span>
+                          <span className="text-slate-500 text-xs truncate max-w-[200px] block">{item.desc1}</span>
                         </div>
                       </div>
                     </td>
                     <td className="p-4">
                       <div className="flex items-center space-x-3">
-                        <img src={item.img2} alt={item.desc2} className="w-10 h-10 rounded-lg object-cover border border-slate-200 shrink-0" />
                         <div>
                           <span className="font-bold text-slate-700 block">{item.sku2}</span>
-                          <span className="text-slate-500 text-xs">{item.desc2}</span>
+                          <span className="text-slate-500 text-xs truncate max-w-[200px] block">{item.desc2}</span>
                         </div>
                       </div>
                     </td>
                     <td className="p-4">
-                      <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold" title="Skor di atas 80% menandakan kemungkinan barang ini adalah duplikat">
+                      <span className={`px-2 py-1 ${Number(item.score) >= 90 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'} rounded-full text-xs font-bold`} title="Skor di atas 80% menandakan kemungkinan barang ini adalah duplikat">
                         {item.score}%
                       </span>
                     </td>

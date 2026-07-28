@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { UserCheck } from 'lucide-react';
-import { DUMMY_APPROVERS } from '@/src/lib/mock';
+import { INITIAL_APPROVERS } from '@/src/lib/mock';
 
 interface ApproverSelectionProps {
   selectedApprover: string;
@@ -38,7 +38,7 @@ export const ApproverSelection: React.FC<ApproverSelectionProps> = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {DUMMY_APPROVERS.map(approver => (
+            {INITIAL_APPROVERS.map(approver => (
               <tr 
                 key={approver.id} 
                 className={`hover:bg-slate-50 transition-colors cursor-pointer ${selectedApprover === approver.id ? 'bg-red-50/50' : ''}`} 
