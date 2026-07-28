@@ -222,8 +222,8 @@ export const RestockForm: React.FC<RestockFormProps> = ({ onSuccess }) => {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {errorMsg && (
-        <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-md flex items-center space-x-3 text-xs font-bold shadow-sm">
-          <AlertCircle className="w-5 h-5 shrink-0 text-red-600" />
+        <div className="p-5 bg-red-50 border border-red-200 text-red-700 rounded-md flex items-center space-x-3 text-base font-bold shadow-sm">
+          <AlertCircle className="w-6 h-6 shrink-0 text-red-600" />
           <span>{errorMsg}</span>
         </div>
       )}
@@ -252,51 +252,19 @@ export const RestockForm: React.FC<RestockFormProps> = ({ onSuccess }) => {
       )}
       {/* Multi Restock Items Selector */}
       <div className="bg-white p-5 rounded-md border border-slate-200 shadow-sm space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-          <span className="text-sm font-bold text-slate-900 uppercase tracking-wider">
-            Daftar Barang Datang Yang Akan Ditambah Stoknya (
-            {restockItems.length} Item)
+        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+          <span className="text-xl font-bold text-slate-900 uppercase tracking-wider">
+            Daftar Barang Datang Yang Akan Ditambah Stoknya ({restockItems.length} Item)
           </span>
 
-          <div className="flex items-center space-x-2">
-            {/* AI Auto-Fill Button */}
-            <input
-              type="file"
-              ref={autoFillFileRef}
-              accept=".pdf"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) handleAutoFillFromPDF(file);
-                e.target.value = "";
-              }}
-            />
-            <button
-              type="button"
-              onClick={() => autoFillFileRef.current?.click()}
-              disabled={isAutoFilling}
-              className="px-3.5 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 font-semibold rounded-md text-xs flex items-center space-x-1.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-            >
-              {isAutoFilling ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Plus className="w-4 h-4" />
-              )}
-              <span>
-                {isAutoFilling ? "AI Memproses..." : "Tambah Otomatis (PDF)"}
-              </span>
-            </button>
-
-            {/* Manual Add Button */}
-            <button
-              type="button"
-              onClick={handleAddRestockRow}
-              className="px-3.5 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 font-semibold rounded-md text-xs flex items-center space-x-1.5 transition-all"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Tambah Item Datang</span>
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={handleAddRestockRow}
+            className="px-5 py-2.5 bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 font-semibold rounded-md text-base flex items-center space-x-2 transition-all"
+          >
+            <Plus className="w-5 h-5" />
+            <span>Tambah Item Datang</span>
+          </button>
         </div>
 
         <div className="flex items-center space-x-2 overflow-x-auto pb-1">
@@ -310,7 +278,7 @@ export const RestockForm: React.FC<RestockFormProps> = ({ onSuccess }) => {
                   setSearchQuery("");
                   setIsDropdownOpen(false);
                 }}
-                className={`px-3 py-2 rounded-md text-xs font-semibold transition-all cursor-pointer flex items-center space-x-2 shrink-0 border ${
+                className={`px-4 py-3 rounded-md text-base font-semibold transition-all cursor-pointer flex items-center space-x-3 shrink-0 border ${
                   activeRestockIndex === idx
                     ? "bg-red-50 text-red-700 border-red-300 shadow-xs"
                     : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
@@ -327,9 +295,9 @@ export const RestockForm: React.FC<RestockFormProps> = ({ onSuccess }) => {
                       e.stopPropagation();
                       handleRemoveRestockRow(idx);
                     }}
-                    className="p-1 text-slate-400 hover:text-slate-700 transition-colors"
+                    className="p-1.5 text-slate-400 hover:text-slate-700 transition-colors"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash2 className="w-5 h-5" />
                   </button>
                 )}
               </div>
@@ -340,25 +308,25 @@ export const RestockForm: React.FC<RestockFormProps> = ({ onSuccess }) => {
 
       {/* Restock Form Details */}
       <div className="bg-white p-6 sm:p-8 rounded-md border border-slate-200 shadow-sm space-y-6">
-        <div className="flex items-center space-x-2 pb-3 border-b border-slate-200">
-          <RefreshCw className="w-5 h-5 text-red-600" />
-          <h3 className="text-lg font-bold text-slate-900">
+        <div className="flex items-center space-x-3 pb-4 border-b border-slate-200">
+          <RefreshCw className="w-8 h-8 text-red-600" />
+          <h3 className="text-2xl font-bold text-slate-900">
             Form Penambahan Stok Barang Datang #{activeRestockIndex + 1}
           </h3>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="relative" ref={dropdownRef}>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">
+            <label className="block text-lg font-bold text-slate-700 mb-2">
               Cari & Pilih Tool Dari Master Data *
             </label>
-
-            <div
-              className="w-full bg-white border border-slate-300 rounded-md flex items-center justify-between cursor-pointer focus-within:ring-1 focus-within:ring-red-500 focus-within:border-red-500"
+            
+            <div 
+              className="w-full bg-white border border-slate-300 rounded-xl flex items-center justify-between cursor-pointer focus-within:ring-2 focus-within:ring-red-500 focus-within:border-red-500"
               onClick={() => setIsDropdownOpen(true)}
             >
-              <div className="flex-1 flex items-center px-3 py-2.5">
-                <Search className="w-4 h-4 text-slate-400 mr-2 shrink-0" />
+              <div className="flex-1 flex items-center px-4 py-4">
+                <Search className="w-6 h-6 text-slate-400 mr-3 shrink-0" />
                 <input
                   type="text"
                   placeholder="Ketik nama atau kode tool..."
@@ -373,20 +341,17 @@ export const RestockForm: React.FC<RestockFormProps> = ({ onSuccess }) => {
                     setSearchQuery(e.target.value);
                     setIsDropdownOpen(true);
                   }}
-                  className="w-full outline-none text-sm font-semibold text-slate-900 placeholder:text-slate-400 bg-transparent"
+                  className="w-full outline-none text-lg font-semibold text-slate-900 placeholder:text-slate-400 bg-transparent"
                 />
               </div>
-              <div className="px-3">
+              <div className="px-4">
                 {isDropdownOpen ? (
-                  <X
-                    className="w-4 h-4 text-slate-400 hover:text-slate-600"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsDropdownOpen(false);
-                    }}
+                  <X 
+                    className="w-6 h-6 text-slate-400 hover:text-slate-600" 
+                    onClick={(e) => { e.stopPropagation(); setIsDropdownOpen(false); }}
                   />
                 ) : (
-                  <ChevronDown className="w-4 h-4 text-slate-400" />
+                  <ChevronDown className="w-6 h-6 text-slate-400" />
                 )}
               </div>
             </div>
@@ -404,26 +369,22 @@ export const RestockForm: React.FC<RestockFormProps> = ({ onSuccess }) => {
                           setSearchQuery("");
                           setIsDropdownOpen(false);
                         }}
-                        className={`px-4 py-2 text-sm cursor-pointer hover:bg-slate-50 border-b border-slate-50 last:border-0 flex items-center justify-between ${
-                          currentRestockItem?.toolId === t.id
-                            ? "bg-red-50 text-red-700 font-bold"
-                            : "text-slate-700 font-medium"
+                        className={`px-5 py-3 text-base cursor-pointer hover:bg-slate-50 border-b border-slate-50 last:border-0 flex items-center justify-between ${
+                          currentRestockItem?.toolId === t.id ? 'bg-red-50 text-red-700 font-bold' : 'text-slate-700 font-medium'
                         }`}
                       >
                         <div className="flex flex-col">
                           <span>{t.name}</span>
-                          <span className="text-[10px] text-slate-400 font-mono">
-                            {t.code}
-                          </span>
+                          <span className="text-sm text-slate-400 font-mono mt-1">{t.code}</span>
                         </div>
-                        <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md">
+                        <span className="text-sm bg-slate-100 text-slate-600 px-3 py-1 rounded-md">
                           Stok: {t.stock} {t.unit}
                         </span>
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <div className="p-4 text-sm text-slate-500 text-center font-medium">
+                  <div className="p-6 text-base text-slate-500 text-center font-medium">
                     Tidak ada tool ditemukan.
                   </div>
                 )}
@@ -432,82 +393,69 @@ export const RestockForm: React.FC<RestockFormProps> = ({ onSuccess }) => {
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">
+            <label className="block text-lg font-bold text-slate-700 mb-2">
               Jumlah Stok Datang / Tambah *
             </label>
             <input
               type="number"
               min="1"
-              value={currentRestockItem?.quantityAdded || ""}
-              onChange={(e) =>
-                updateRestockRow("quantityAdded", Number(e.target.value))
-              }
-              className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-md text-base font-bold text-slate-900 focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
+              value={currentRestockItem?.quantityAdded || ''}
+              onChange={(e) => updateRestockRow('quantityAdded', Number(e.target.value))}
+              className="w-full px-5 py-4 bg-white border border-slate-300 rounded-xl text-2xl font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
               required
             />
           </div>
         </div>
 
         {selectedToolObject && (
-          <div className="p-5 bg-slate-50 border border-slate-200 rounded-md flex flex-col sm:flex-row items-center justify-between gap-4 mt-6">
-            <div className="flex items-center space-x-4">
+          <div className="p-6 bg-slate-50 border border-slate-200 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-6 mt-8">
+            <div className="flex items-center space-x-6">
               <img
                 src={selectedToolObject.imageUrl}
                 alt={selectedToolObject.name}
-                className="w-16 h-16 rounded-md object-cover border border-slate-300 shrink-0"
+                className="w-24 h-24 rounded-xl object-cover border border-slate-300 shrink-0"
               />
               <div>
-                <span className="font-mono text-[11px] font-bold text-red-600 bg-red-100 px-2 py-0.5 rounded">
+                <span className="font-mono text-sm font-bold text-red-600 bg-red-100 px-3 py-1 rounded">
                   {selectedToolObject.code}
                 </span>
-                <h4 className="font-extrabold text-slate-900 text-sm mt-1">
+                <h4 className="font-extrabold text-slate-900 text-xl mt-2">
                   {selectedToolObject.name}
                 </h4>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Kategori:{" "}
-                  <span className="font-semibold text-slate-700">
-                    {selectedToolObject.category}
-                  </span>{" "}
-                  | Lokasi:{" "}
-                  <span className="font-semibold text-slate-700">
-                    {selectedToolObject.location}
-                  </span>
+                <p className="text-base text-slate-500 mt-1.5">
+                  Kategori: <span className="font-semibold text-slate-700">{selectedToolObject.category}</span> | Lokasi: <span className="font-semibold text-slate-700">{selectedToolObject.location}</span>
                 </p>
               </div>
             </div>
           </div>
         )}
 
-        <div className="pt-2">
-          <label className="block text-xs font-bold text-slate-700 mb-1.5">
+        <div className="pt-4">
+          <label className="block text-lg font-bold text-slate-700 mb-2">
             Keterangan / Nomor Surat Jalan (Opsional)
           </label>
           <input
             type="text"
             placeholder="Contoh: Penerimaan PO-2026-081 dari PT Precision Tools"
-            value={currentRestockItem?.notes || ""}
-            onChange={(e) => updateRestockRow("notes", e.target.value)}
-            className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-md text-sm focus:outline-none focus:border-slate-400"
+            value={currentRestockItem?.notes || ''}
+            onChange={(e) => updateRestockRow('notes', e.target.value)}
+            className="w-full px-5 py-4 bg-white border border-slate-300 rounded-xl text-lg focus:outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-400"
           />
         </div>
       </div>
 
       {/* Action Footer */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-6 bg-slate-100 border border-slate-200 rounded-md shadow-sm">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-6 p-8 bg-slate-100 border border-slate-200 rounded-xl shadow-sm">
         <div>
-          <h4 className="font-bold text-slate-900">
-            Simpan Pembaruan Stok ({restockItems.length} Item)
-          </h4>
-          <p className="text-xs text-slate-500">
-            Stok barang pada Master Data akan langsung bertambah.
-          </p>
+          <h4 className="font-bold text-xl text-slate-900">Simpan Pembaruan Stok ({restockItems.length} Item)</h4>
+          <p className="text-base text-slate-500 mt-1">Stok barang pada Master Data akan langsung bertambah.</p>
         </div>
 
         <button
           type="submit"
-          className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-white font-bold px-8 py-2.5 rounded-md text-sm flex items-center justify-center space-x-2 shadow-sm transition-all shrink-0"
+          className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-white font-bold px-10 py-4 rounded-xl text-xl flex items-center justify-center space-x-3 shadow-md transition-all shrink-0"
         >
-          <CheckCircle2 className="w-4 h-4" />
+          <CheckCircle2 className="w-6 h-6" />
           <span>Update Data Stok</span>
         </button>
       </div>

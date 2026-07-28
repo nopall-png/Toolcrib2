@@ -26,6 +26,10 @@ export interface UserSession {
 }
 
 interface AppContextType {
+  // UI State
+  isSidebarOpen: boolean;
+  setSidebarOpen: (isOpen: boolean) => void;
+
   // Session
   session: UserSession;
   loginUserStep1: (deptId: string, pass: string) => { success: boolean; message?: string };
@@ -77,6 +81,7 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [session, setSession] = useState<UserSession>({ role: 'NONE' });
   const [departments] = useState<Department[]>(INITIAL_DEPARTMENTS);
   const [users, setUsers] = useState<AppUser[]>(INITIAL_USERS);
@@ -388,6 +393,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   return (
     <AppContext.Provider
       value={{
+        isSidebarOpen,
+        setSidebarOpen,
         session,
         loginUserStep1,
         loginUserStep2,
