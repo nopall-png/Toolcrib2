@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useAppStore } from '@/src/lib/store';
 import {
   ChevronRight,
@@ -13,6 +13,7 @@ import {
   Menu,
 } from 'lucide-react';
 import { ActiveTab } from './Sidebar';
+import ChatbotDrawer from './ChatbotDrawer';
 
 interface HeaderProps {
   activeTab: ActiveTab;
@@ -126,6 +127,15 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, onOpenCart }) => {
           <LogOut className="w-6 h-6" />
         </button>
       </div>
+
+      {/* Render Chatbot Drawer */}
+      {session.role === 'TOOLCRIB' && (
+        <ChatbotDrawer 
+          isOpen={isChatbotOpen} 
+          onClose={() => setIsChatbotOpen(false)} 
+          user={session} 
+        />
+      )}
     </header>
   );
 };

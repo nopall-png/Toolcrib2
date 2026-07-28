@@ -1,9 +1,21 @@
-'use client';
+"use client";
 
-import React, { useState, useRef, useEffect } from 'react';
-import { useAppStore } from '@/src/lib/store';
-import { RestockItemState } from './types';
-import { RefreshCw, Plus, Trash2, CheckCircle2, AlertCircle, Search, ChevronDown, X } from 'lucide-react';
+import React, { useState, useRef, useEffect } from "react";
+import { useAppStore } from "@/src/lib/store";
+import { RestockItemState } from "./types";
+import {
+  RefreshCw,
+  Plus,
+  Trash2,
+  CheckCircle2,
+  AlertCircle,
+  Search,
+  ChevronDown,
+  X,
+  Upload,
+  Loader2,
+  Sparkles,
+} from "lucide-react";
 
 interface RestockFormProps {
   onSuccess: () => void;
@@ -13,33 +25,143 @@ export const RestockForm: React.FC<RestockFormProps> = ({ onSuccess }) => {
   const { tools, updateToolStock } = useAppStore();
 
   const [restockItems, setRestockItems] = useState<RestockItemState[]>([
-    { toolId: tools[0]?.id || '', quantityAdded: 5, notes: 'Restock pasokan baru' },
+    {
+      toolId: tools[0]?.id || "",
+      quantityAdded: 5,
+      notes: "Restock pasokan baru",
+    },
   ]);
   const [activeRestockIndex, setActiveRestockIndex] = useState<number>(0);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [successAutoFill, setSuccessAutoFill] = useState<string | null>(null);
+
+  // Auto-fill AI State
+  const [isAutoFilling, setIsAutoFilling] = useState(false);
+  const autoFillFileRef = useRef<HTMLInputElement>(null);
 
   // Custom Dropdown State
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsDropdownOpen(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const handleAddRestockRow = () => {
     const nextTool = tools[restockItems.length % tools.length] || tools[0];
     setRestockItems((prev) => [
       ...prev,
-      { toolId: nextTool?.id || '', quantityAdded: 5, notes: 'Restock tambahan' },
+      {
+        toolId: nextTool?.id || "",
+        quantityAdded: 5,
+        notes: "Restock tambahan",
+      },
     ]);
     setActiveRestockIndex(restockItems.length);
+  };
+
+  // ── AI Auto-Fill from PDF ───────────────────────────────────────
+  const fuzzyMatchTool = (itemName: string) => {
+    const lower = itemName.toLowerCase();
+    // 1. Exact code match (e.g. TL-BOS-03)
+    const codeMatch = tools.find((t) => lower.includes(t.code.toLowerCase()));
+    if (codeMatch) return codeMatch;
+    // 2. Name substring match
+    const nameMatch = tools.find(
+      (t) =>
+        lower.includes(t.name.toLowerCase()) ||
+        t.name.toLowerCase().includes(lower),
+    );
+    if (nameMatch) return nameMatch;
+    // 3. Word-by-word similarity: find the tool with most matching words
+    const words = lower.split(/\s+/).filter((w) => w.length > 2);
+    let bestMatch: (typeof tools)[0] | null = null;
+    let bestScore = 0;
+    for (const tool of tools) {
+      const toolWords = tool.name.toLowerCase().split(/\s+/);
+      const score = words.filter((w) =>
+        toolWords.some((tw) => tw.includes(w) || w.includes(tw)),
+      ).length;
+      if (score > bestScore) {
+        bestScore = score;
+        bestMatch = tool;
+      }
+    }
+    return bestScore >= 1 ? bestMatch : null;
+  };
+
+  const handleAutoFillFromPDF = async (file: File) => {
+    setIsAutoFilling(true);
+    setErrorMsg(null);
+    setSuccessAutoFill(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("http://localhost:8000/api/parse-restock", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) throw new Error("Gagal terhubung ke server AI.");
+
+      const data = await res.json();
+
+      if (data.status !== "success" || !data.items?.length) {
+        setErrorMsg(data.message || "AI tidak menemukan item di dalam PDF.");
+        setIsAutoFilling(false);
+        return;
+      }
+
+      // Match extracted items to master data tools
+      const newRows: RestockItemState[] = [];
+      const unmatchedItems: string[] = [];
+
+      for (const item of data.items) {
+        const matchedTool = fuzzyMatchTool(item.name);
+        if (matchedTool) {
+          newRows.push({
+            toolId: matchedTool.id,
+            quantityAdded: item.quantity,
+            notes: item.notes || ``,
+          });
+        } else {
+          unmatchedItems.push(item.name);
+        }
+      }
+
+      if (newRows.length > 0) {
+        setRestockItems(newRows);
+        setActiveRestockIndex(0);
+        setSuccessAutoFill(
+          `Berhasil mengisi ${newRows.length} item dari PDF.` +
+            (unmatchedItems.length > 0
+              ? ` (${unmatchedItems.length} item tidak ditemukan di master data)`
+              : ""),
+        );
+      } else {
+        setErrorMsg(
+          "Tidak ada item dari PDF yang cocok dengan master data tools.",
+        );
+      }
+    } catch (err) {
+      setErrorMsg(
+        "Gagal memproses PDF. Pastikan server AI Python sudah berjalan.",
+      );
+    } finally {
+      setIsAutoFilling(false);
+    }
   };
 
   const handleRemoveRestockRow = (idx: number) => {
@@ -53,7 +175,9 @@ export const RestockForm: React.FC<RestockFormProps> = ({ onSuccess }) => {
 
   const updateRestockRow = (field: keyof RestockItemState, value: any) => {
     setRestockItems((prev) =>
-      prev.map((item, idx) => (idx === activeRestockIndex ? { ...item, [field]: value } : item))
+      prev.map((item, idx) =>
+        idx === activeRestockIndex ? { ...item, [field]: value } : item,
+      ),
     );
   };
 
@@ -70,7 +194,9 @@ export const RestockForm: React.FC<RestockFormProps> = ({ onSuccess }) => {
       }
       if (item.quantityAdded <= 0) {
         setActiveRestockIndex(i);
-        setErrorMsg(`Jumlah stok masuk pada Item #${i + 1} harus lebih dari 0!`);
+        setErrorMsg(
+          `Jumlah stok masuk pada Item #${i + 1} harus lebih dari 0!`,
+        );
         return;
       }
     }
@@ -82,12 +208,15 @@ export const RestockForm: React.FC<RestockFormProps> = ({ onSuccess }) => {
     onSuccess();
   };
 
-  const currentRestockItem = restockItems[activeRestockIndex] || restockItems[0];
-  const selectedToolObject = tools.find((t) => t.id === currentRestockItem?.toolId) || tools[0];
+  const currentRestockItem =
+    restockItems[activeRestockIndex] || restockItems[0];
+  const selectedToolObject =
+    tools.find((t) => t.id === currentRestockItem?.toolId) || tools[0];
 
-  const filteredTools = tools.filter((t) =>
-    t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    t.code.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredTools = tools.filter(
+    (t) =>
+      t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      t.code.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   return (
@@ -99,6 +228,28 @@ export const RestockForm: React.FC<RestockFormProps> = ({ onSuccess }) => {
         </div>
       )}
 
+      {successAutoFill && (
+        <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-md flex items-center space-x-3 text-xs font-bold shadow-sm">
+          <Sparkles className="w-5 h-5 shrink-0 text-emerald-600" />
+          <span>
+            {successAutoFill} — Silakan crosscheck sebelum klik &quot;Update
+            Data Stok&quot;.
+          </span>
+        </div>
+      )}
+
+      {/* Loading Overlay during AI processing */}
+      {isAutoFilling && (
+        <div className="p-6 bg-slate-50 border border-slate-200 rounded-md flex flex-col items-center justify-center space-y-3 shadow-sm">
+          <Loader2 className="w-8 h-8 animate-spin text-slate-900" />
+          <p className="text-sm font-bold text-slate-700">
+            AI sedang membaca dan menganalisis PDF...
+          </p>
+          <p className="text-xs text-slate-500">
+            Proses ini membutuhkan beberapa detik.
+          </p>
+        </div>
+      )}
       {/* Multi Restock Items Selector */}
       <div className="bg-white p-5 rounded-md border border-slate-200 shadow-sm space-y-4">
         <div className="flex items-center justify-between pb-4 border-b border-slate-100">
@@ -124,16 +275,19 @@ export const RestockForm: React.FC<RestockFormProps> = ({ onSuccess }) => {
                 key={idx}
                 onClick={() => {
                   setActiveRestockIndex(idx);
-                  setSearchQuery('');
+                  setSearchQuery("");
                   setIsDropdownOpen(false);
                 }}
                 className={`px-4 py-3 rounded-md text-base font-semibold transition-all cursor-pointer flex items-center space-x-3 shrink-0 border ${
                   activeRestockIndex === idx
-                    ? 'bg-red-50 text-red-700 border-red-300 shadow-xs'
-                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                    ? "bg-red-50 text-red-700 border-red-300 shadow-xs"
+                    : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
                 }`}
               >
-                <span>Item #{idx + 1}: {targetTool ? targetTool.name : 'Pilih Barang'}</span>
+                <span>
+                  Item #{idx + 1}:{" "}
+                  {targetTool ? targetTool.name : "Pilih Barang"}
+                </span>
                 {restockItems.length > 1 && (
                   <button
                     type="button"
@@ -176,7 +330,13 @@ export const RestockForm: React.FC<RestockFormProps> = ({ onSuccess }) => {
                 <input
                   type="text"
                   placeholder="Ketik nama atau kode tool..."
-                  value={isDropdownOpen ? searchQuery : (selectedToolObject ? `[${selectedToolObject.code}] ${selectedToolObject.name}` : '')}
+                  value={
+                    isDropdownOpen
+                      ? searchQuery
+                      : selectedToolObject
+                        ? `[${selectedToolObject.code}] ${selectedToolObject.name}`
+                        : ""
+                  }
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
                     setIsDropdownOpen(true);
@@ -205,8 +365,8 @@ export const RestockForm: React.FC<RestockFormProps> = ({ onSuccess }) => {
                       <li
                         key={t.id}
                         onClick={() => {
-                          updateRestockRow('toolId', t.id);
-                          setSearchQuery('');
+                          updateRestockRow("toolId", t.id);
+                          setSearchQuery("");
                           setIsDropdownOpen(false);
                         }}
                         className={`px-5 py-3 text-base cursor-pointer hover:bg-slate-50 border-b border-slate-50 last:border-0 flex items-center justify-between ${
