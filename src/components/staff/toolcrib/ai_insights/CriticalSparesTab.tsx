@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Filter, AlertOctagon, TrendingDown, CheckCircle2, ShoppingCart, BrainCircuit, Activity } from 'lucide-react';
+import { Filter, AlertOctagon, TrendingDown, CheckCircle2, ShoppingCart, BrainCircuit, Activity, Replace } from 'lucide-react';
 import { INITIAL_TOOLS } from '@/src/lib/mock';
 
 const INITIAL_SPARES = [
@@ -10,21 +10,24 @@ const INITIAL_SPARES = [
     currentStock: 2, minStock: 5,
     riskFactor: 'Dampak Mesin Sangat Tinggi & Lead Time Lama (45 Hari)',
     class: 'CRITICAL', status: 'DANGER', isOrdered: false,
-    aiScores: { usage: 80, lt: 45, machine: 100, total: 85.5 }
+    aiScores: { usage: 80, lt: 45, machine: 100, total: 85.5 },
+    alternativeItem: { sku: 'TL-DIE-08-ALT', desc: 'Precision Mold Pin (Brand B)', stock: 45, match: 94 }
   },
   {
     sku: INITIAL_TOOLS[5].code, desc: INITIAL_TOOLS[5].name, img: INITIAL_TOOLS[5].imageUrl,
     currentStock: 15, minStock: 10,
     riskFactor: 'Dampak Mesin Menengah',
     class: 'IMPORTANT', status: 'SAFE', isOrdered: false,
-    aiScores: { usage: 95, lt: 14, machine: 50, total: 68.2 }
+    aiScores: { usage: 95, lt: 14, machine: 50, total: 68.2 },
+    alternativeItem: null
   },
   {
     sku: INITIAL_TOOLS[3].code, desc: INITIAL_TOOLS[3].name, img: INITIAL_TOOLS[3].imageUrl,
     currentStock: 50, minStock: 20,
     riskFactor: 'Barang Kebutuhan Umum (Mudah Didapat)',
     class: 'STANDARD', status: 'SAFE', isOrdered: false,
-    aiScores: { usage: 100, lt: 3, machine: 20, total: 35.1 }
+    aiScores: { usage: 100, lt: 3, machine: 20, total: 35.1 },
+    alternativeItem: null
   },
 ];
 
@@ -146,37 +149,43 @@ export const CriticalSparesTab = () => {
                   </td>
 
                   <td className="p-4">
-                    {item.status === 'DANGER' ? (
-                      item.isOrdered ? (
-                        <span className="flex items-center space-x-1 text-slate-500 font-bold text-xs bg-slate-100 px-3 py-1.5 rounded-lg w-max border border-slate-200">
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>PO Diproses</span>
-                        </span>
-                      ) : (
-                        <button
-                          onClick={() => handleEmergencyOrder(idx)}
-                          className="flex items-center space-x-1 text-xs text-white font-bold px-3 py-1.5 bg-red-600 rounded-lg hover:bg-red-700 transition-colors shadow-sm animate-pulse"
-                        >
-                          <ShoppingCart className="w-3.5 h-3.5" />
-                          <span>Order Darurat</span>
-                        </button>
-                      )
-                    ) : (
-                      <button
+                    <div className="flex items-center space-x-2">
+                      {item.status === 'DANGER' ? (
+                        item.isOrdered ? (
+                          <span className="flex items-center space-x-1 text-slate-500 font-bold text-xs bg-slate-100 px-3 py-1.5 rounded-lg w-max border border-slate-200">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>PO Diproses</span>
+                          </span>
+                        ) : (
+                          <button 
+                            onClick={() => handleEmergencyOrder(idx)}
+                            className="flex items-center space-x-1 text-xs text-white font-bold px-3 py-1.5 bg-red-600 rounded-lg hover:bg-red-700 transition-colors shadow-sm animate-pulse"
+                          >
+                            <ShoppingCart className="w-3.5 h-3.5" />
+                            <span>Order Darurat</span>
+                          </button>
+                        )
+                      ) : null}
+                      
+                      <button 
                         onClick={() => setExpandedItem(expandedItem === idx ? null : idx)}
-                        className="text-xs text-indigo-600 font-bold hover:underline px-3 py-1.5 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors"
+                        className={`text-xs font-bold hover:underline px-3 py-1.5 rounded-lg transition-colors ${
+                          item.status === 'DANGER' 
+                            ? 'text-slate-600 bg-slate-100 hover:bg-slate-200' 
+                            : 'text-indigo-600 bg-indigo-50 hover:bg-indigo-100'
+                        }`}
                       >
                         {expandedItem === idx ? 'Tutup Detail' : 'Lihat Detail'}
                       </button>
-                    )}
+                    </div>
                   </td>
                 </tr>
 
                 {/* Expanded Row Details */}
-                {expandedItem === idx && item.status !== 'DANGER' && (
+                {expandedItem === idx && (
                   <tr className="bg-slate-50/50">
                     <td colSpan={5} className="p-6 border-t border-slate-100">
-                      <div className="max-w-3xl">
+                      <div className="max-w-3xl whitespace-normal">
                         <h4 className="font-bold text-slate-800 flex items-center space-x-2 mb-4">
                           <BrainCircuit className="w-4 h-4 text-indigo-600" />
                           <span>Rincian Kalkulasi Skor AI (Mesin Suku Cadang Kritis)</span>
@@ -223,8 +232,43 @@ export const CriticalSparesTab = () => {
                         </div>
 
                         <p className="text-xs text-slate-500 mt-4 leading-relaxed">
-                          * <strong>Insight:</strong> Meskipun skor total AI untuk barang ini adalah {item.aiScores.total}, namun karena sisa stok ({item.currentStock} unit) masih jauh di atas batas minimum keamanan ({item.minStock} unit), status barang ini dinyatakan <strong>Aman (SAFE)</strong>. Tidak diperlukan tindakan pemesanan darurat saat ini.
+                          * <strong>Insight:</strong> Skor total AI untuk barang ini adalah {item.aiScores.total}. 
+                          {item.status === 'DANGER' ? (
+                            <span> Karena sisa stok ({item.currentStock} unit) sudah berada di bawah batas minimum keamanan ({item.minStock} unit), status barang ini dinyatakan <strong className="text-red-600">KRITIS (DANGER)</strong>. Pemesanan darurat sangat diperlukan untuk menghindari mesin produksi mati.</span>
+                          ) : (
+                            <span> Karena sisa stok ({item.currentStock} unit) masih di atas batas minimum keamanan ({item.minStock} unit), status barang ini dinyatakan <strong className="text-emerald-600">Aman (SAFE)</strong>. Tidak diperlukan tindakan pemesanan darurat saat ini.</span>
+                          )}
                         </p>
+                        
+                        {item.alternativeItem && (
+                          <div className="mt-4 p-4 bg-emerald-50 border border-emerald-200 rounded-xl animate-in fade-in slide-in-from-bottom-2">
+                            <h5 className="font-bold text-emerald-800 flex items-center space-x-2 mb-2 text-sm">
+                              <BrainCircuit className="w-4 h-4 text-emerald-600" />
+                              <span>💡 Saran Substitusi AI (Pencegah PO Darurat)</span>
+                            </h5>
+                            <p className="text-xs text-emerald-700 mb-3">AI mendeteksi adanya barang kembar (Duplikat Semantik) dengan stok berlimpah di gudang yang bisa digunakan sementara untuk mencegah mesin mati tanpa harus membuat PO Darurat.</p>
+                            
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-white p-3 rounded-lg border border-emerald-100 shadow-sm gap-4">
+                              <div>
+                                <span className="font-bold text-slate-800 block">{item.alternativeItem.sku}</span>
+                                <span className="text-slate-500 text-xs">{item.alternativeItem.desc}</span>
+                              </div>
+                              <div className="flex items-center space-x-4">
+                                <div className="text-center">
+                                  <span className="block text-[10px] text-slate-400 uppercase font-bold">Kecocokan AI</span>
+                                  <span className="font-bold text-indigo-600 text-sm">{item.alternativeItem.match}%</span>
+                                </div>
+                                <div className="text-center">
+                                  <span className="block text-[10px] text-slate-400 uppercase font-bold">Stok Tersedia</span>
+                                  <span className="font-bold text-emerald-600 text-sm">{item.alternativeItem.stock} Unit</span>
+                                </div>
+                                <button className="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-emerald-700 transition-colors shadow-sm">
+                                  Gunakan Alternatif
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </td>
                   </tr>
