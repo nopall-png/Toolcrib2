@@ -37,7 +37,7 @@ export const StaffDashboardView: React.FC = () => {
         <Header activeTab={managementTab} />
 
         {/* Dynamic Management View */}
-        <main className="p-8 flex-1 max-w-7xl w-full mx-auto">
+        <main className="p-8 lg:p-12 flex-1 w-full">
           {managementTab === 'onboarding' && <OnboardingView setActiveTab={setManagementTab} />}
           {managementTab === 'master_tools' && (
             <MasterDataView onOpenProcurementModal={handleOpenProcurementModal} />
