@@ -10,7 +10,7 @@ interface UserRequestCardProps {
 }
 
 export const UserRequestCard: React.FC<UserRequestCardProps> = ({ req, tools, onOpenReject }) => {
-  const { updateUserRequestStatus, updateUserRequestItemStatus } = useAppStore();
+  const { updateUserRequestStatus, updateUserRequestItemStatus, isProcessingRPC } = useAppStore();
   const [isExpanded, setIsExpanded] = useState<boolean>(true);
 
   // If Non-Standard, the whole request is treated as one item
@@ -58,12 +58,22 @@ export const UserRequestCard: React.FC<UserRequestCardProps> = ({ req, tools, on
         {/* Global Action for Entire Request (if already approved/issued) */}
         <div className="shrink-0 flex items-center justify-end">
           {req.status === 'Approved' && (
-            <button
-              onClick={() => updateUserRequestStatus(req.id, 'Issued')}
-              className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-2 px-6 rounded-md transition-all shadow-sm"
-            >
-              Tandai Barang Diambil
-            </button>
+            <div className="flex space-x-2">
+              <button
+                disabled={isProcessingRPC}
+                onClick={() => updateUserRequestStatus(req.id, 'Cancelled')}
+                className="bg-slate-200 hover:bg-rose-100 text-slate-600 hover:text-rose-600 text-sm font-bold py-2 px-4 rounded-md transition-all shadow-sm disabled:opacity-50"
+              >
+                Batal Diambil
+              </button>
+              <button
+                disabled={isProcessingRPC}
+                onClick={() => updateUserRequestStatus(req.id, 'Issued')}
+                className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-2 px-6 rounded-md transition-all shadow-sm disabled:opacity-50"
+              >
+                Tandai Barang Diambil
+              </button>
+            </div>
           )}
           {(req.status === 'Issued' || req.status === 'Returned') && (
             <div className="py-2 px-6 bg-slate-100 border border-slate-200 rounded-md">
@@ -75,6 +85,11 @@ export const UserRequestCard: React.FC<UserRequestCardProps> = ({ req, tools, on
           {req.status === 'Rejected' && (
             <div className="py-2 px-6 bg-rose-50 border border-rose-100 rounded-md">
               <span className="text-xs font-bold text-rose-600">DITOLAK SEPENUHNYA</span>
+            </div>
+          )}
+          {req.status === 'Cancelled' && (
+            <div className="py-2 px-6 bg-slate-100 border border-slate-200 rounded-md">
+              <span className="text-xs font-bold text-slate-500">BATAL DIAMBIL</span>
             </div>
           )}
         </div>
@@ -116,13 +131,15 @@ export const UserRequestCard: React.FC<UserRequestCardProps> = ({ req, tools, on
                      <div className="flex gap-2">
                         <button
                           onClick={handleApproveNonStandard}
-                          className="px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-sm font-semibold rounded-md border border-emerald-200"
+                          disabled={isProcessingRPC}
+                          className="px-4 py-2 bg-emerald-50 hover:bg-emerald-100 disabled:opacity-50 text-emerald-700 text-sm font-semibold rounded-md border border-emerald-200"
                         >
-                          ACC Request
+                          {isProcessingRPC ? 'Memproses...' : 'ACC Request'}
                         </button>
                         <button
                           onClick={() => onOpenReject(req.id)}
-                          className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 text-sm font-semibold rounded-md border border-rose-200"
+                          disabled={isProcessingRPC}
+                          className="px-4 py-2 bg-rose-50 hover:bg-rose-100 disabled:opacity-50 text-rose-700 text-sm font-semibold rounded-md border border-rose-200"
                         >
                           Tolak
                         </button>
@@ -144,6 +161,7 @@ export const UserRequestCard: React.FC<UserRequestCardProps> = ({ req, tools, on
                     onApprove={() => handleApproveItem(item.toolId)}
                     onReject={() => onOpenReject(req.id, item.toolId)}
                     isParentPending={req.status === 'Pending' && !allItemsApprovedOrRejected}
+                    disabled={isProcessingRPC}
                   />
                 );
               })

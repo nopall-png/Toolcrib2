@@ -8,6 +8,7 @@ interface UserRequestItemRowProps {
   onApprove: () => void;
   onReject: () => void;
   isParentPending: boolean;
+  disabled?: boolean;
 }
 
 export const UserRequestItemRow: React.FC<UserRequestItemRowProps> = ({ 
@@ -15,7 +16,8 @@ export const UserRequestItemRow: React.FC<UserRequestItemRowProps> = ({
   toolDetails, 
   onApprove, 
   onReject,
-  isParentPending
+  isParentPending,
+  disabled = false,
 }) => {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 space-x-0 sm:space-x-3 bg-white p-3 rounded-lg border border-slate-200 shadow-sm relative overflow-hidden group">
@@ -62,16 +64,18 @@ export const UserRequestItemRow: React.FC<UserRequestItemRowProps> = ({
             <span>Rejected</span>
           </span>
         ) : isParentPending ? (
-          <div className="flex gap-1.5">
+          <div className="flex gap-2 w-full sm:w-auto">
             <button
               onClick={onApprove}
-              className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold rounded border border-emerald-200 transition-colors"
+              disabled={disabled}
+              className="flex-1 sm:flex-none px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 disabled:opacity-50 text-emerald-700 text-[10px] font-bold rounded border border-emerald-200 transition-colors"
             >
-              ACC
+              {disabled ? 'Memproses...' : 'Approve'}
             </button>
             <button
               onClick={onReject}
-              className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold rounded border border-rose-200 transition-colors"
+              disabled={disabled}
+              className="flex-1 sm:flex-none px-3 py-1.5 bg-rose-50 hover:bg-rose-100 disabled:opacity-50 text-rose-700 text-[10px] font-bold rounded border border-rose-200 transition-colors"
             >
               Tolak
             </button>

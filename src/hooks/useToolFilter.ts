@@ -39,9 +39,9 @@ export function useToolFilter() {
       // 2. Filter by search query (Name, Code, Location)
       const query = searchQuery.toLowerCase();
       const matchesSearch =
-        tool.name.toLowerCase().includes(query) ||
-        tool.code.toLowerCase().includes(query) ||
-        tool.location.toLowerCase().includes(query);
+        (tool.name || '').toLowerCase().includes(query) ||
+        (tool.code || '').toLowerCase().includes(query) ||
+        (tool.location || '').toLowerCase().includes(query);
 
       // Perbedaan logika per role bisa ditambahkan di sini (contoh: menyembunyikan item tertentu bagi User biasa)
       // if (session.role === 'USER' && tool.status === 'Archived') return false;

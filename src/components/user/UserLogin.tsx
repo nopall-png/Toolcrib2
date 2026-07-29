@@ -9,8 +9,15 @@ export const UserLogin: React.FC = () => {
 
   // Step 1 State
   const [selectedDeptId, setSelectedDeptId] = useState(departments[0]?.id || '');
-  const [password, setPassword] = useState('user123'); // default mock pass for easy testing
+  const [password, setPassword] = useState('divisi123'); // default mock pass for easy testing
   const [errorMsg, setErrorMsg] = useState('');
+
+  // Sync selectedDeptId if departments load late
+  React.useEffect(() => {
+    if (!selectedDeptId && departments.length > 0) {
+      setSelectedDeptId(departments[0].id);
+    }
+  }, [departments, selectedDeptId]);
 
   // Step 2 State
   const [inputEmployeeId, setInputEmployeeId] = useState('EMP-001'); // Default for dev mode

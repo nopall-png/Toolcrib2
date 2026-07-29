@@ -58,8 +58,8 @@ export const UserRequestsView: React.FC = () => {
       <div className="flex items-center space-x-3 mb-2">
         <ClipboardList className="w-8 h-8 text-slate-800" />
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">Request Peminjaman</h2>
-          <p className="text-sm text-slate-500">Kelola permintaan peminjaman alat dari user/divisi</p>
+          <h2 className="text-2xl font-bold text-slate-900">Request Barang</h2>
+          <p className="text-sm text-slate-500">Kelola permintaan barang dari user/divisi</p>
         </div>
       </div>
 

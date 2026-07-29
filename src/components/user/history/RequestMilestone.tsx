@@ -12,19 +12,20 @@ export const RequestMilestone: React.FC<RequestMilestoneProps> = ({ status }) =>
   // Define steps
   const steps = [
     { label: 'Diajukan', key: 'step1' },
-    { label: 'Diproses', key: 'step2' },
+    { label: status === 'Cancelled' ? 'Batal Diambil' : 'Diproses', key: 'step2' },
     { label: status === 'Rejected' ? 'Ditolak' : (status === 'Returned' ? 'Dikembalikan' : 'Diserahkan'), key: 'step3' }
   ];
 
   // Determine current step index based on status
   let currentStepIndex = 0;
   let isRejected = status === 'Rejected';
+  let isCancelled = status === 'Cancelled';
   let isReturned = status === 'Returned';
   let isIssued = status === 'Issued';
 
   if (status === 'Pending') {
     currentStepIndex = 0;
-  } else if (status === 'Approved') {
+  } else if (status === 'Approved' || status === 'Cancelled') {
     currentStepIndex = 1;
   } else if (status === 'Issued' || status === 'Returned' || status === 'Rejected') {
     currentStepIndex = 2;
@@ -37,7 +38,7 @@ export const RequestMilestone: React.FC<RequestMilestoneProps> = ({ status }) =>
 
       {/* Progress Line */}
       <div 
-        className={`absolute top-7 left-[10%] h-1 rounded-full transition-all duration-500 ${isRejected ? 'bg-red-500' : 'bg-emerald-500'}`}
+        className={`absolute top-7 left-[10%] h-1 rounded-full transition-all duration-500 ${isRejected || isCancelled ? 'bg-red-500' : 'bg-emerald-500'}`}
         style={{ width: currentStepIndex === 0 ? '0%' : currentStepIndex === 1 ? '40%' : '80%' }}
       />
 
@@ -54,9 +55,12 @@ export const RequestMilestone: React.FC<RequestMilestoneProps> = ({ status }) =>
           if (isCurrent && isRejected && index === 2) {
             Icon = X;
           }
+          if (isCurrent && isCancelled && index === 1) {
+            Icon = X;
+          }
 
-          let bgColor = isActive ? (isRejected && index === 2 ? 'bg-red-500' : 'bg-emerald-500') : 'bg-slate-200';
-          let textColor = isActive ? (isRejected && index === 2 ? 'text-red-700' : 'text-emerald-700') : 'text-slate-400';
+          let bgColor = isActive ? ((isRejected && index === 2) || (isCancelled && index === 1) ? 'bg-red-500' : 'bg-emerald-500') : 'bg-slate-200';
+          let textColor = isActive ? ((isRejected && index === 2) || (isCancelled && index === 1) ? 'text-red-700' : 'text-emerald-700') : 'text-slate-400';
           let iconColor = isActive ? 'text-white' : 'text-slate-400';
           
           return (

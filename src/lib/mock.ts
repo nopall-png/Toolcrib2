@@ -64,7 +64,7 @@ export interface UserRequest {
   employeeId: string;
   department: string;
   items: UserRequestItem[];
-  status: 'Pending' | 'Accept' | 'On going' | 'Sudah sampai' | 'Reject';
+  status: 'Pending' | 'Approved' | 'Issued' | 'Returned' | 'Rejected' | 'Cancelled';
   requestDate: string;
   notes?: string;
   
