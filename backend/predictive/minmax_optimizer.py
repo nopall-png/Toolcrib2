@@ -54,7 +54,6 @@ class MinMaxOptimizer:
             
         df_final['Safety_Factor'] = df_final['Criticality_Level'].apply(get_safety_factor)
         
-        # Daripada asumsi 365 hari tetap, gunakan rentang hari aktual per SKU
         date_range = df_trx.groupby('SKU_ID')['Date'].agg(lambda x: (x.max() - x.min()).days + 1)
         date_range = date_range.rename('Actual_Days').reset_index()
         df_final = pd.merge(df_final, date_range, on='SKU_ID', how='left')

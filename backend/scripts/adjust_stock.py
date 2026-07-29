@@ -1,8 +1,12 @@
 import os
+import sys
 from dotenv import load_dotenv
 from supabase import create_client
 
-load_dotenv('../../.env.local')
+# Add parent dir to path so environment variables load correctly
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '..', '.env.local'))
+
 url = os.environ.get("NEXT_PUBLIC_SUPABASE_URL")
 key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
 supabase = create_client(url, key)
@@ -19,12 +23,15 @@ items_to_adjust = {
     'BRG-ELC-056': 1,  # Min will be 1 (clipped), current 1 -> OPTIMAL (or borderline)
 }
 
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8')
+
 print("Adjusting stock in Supabase 'tools' table for demo purposes...")
 for code, stock in items_to_adjust.items():
     try:
         supabase.table('tools').update({'stock': stock}).eq('code', code).execute()
-        print(f"✅ Updated {code} to {stock}")
+        print(f"[OK] Updated {code} to {stock}")
     except Exception as e:
-        print(f"❌ Failed to update {code}: {e}")
+        print(f"[ERROR] Failed to update {code}: {e}")
 
 print("Stock adjustment complete!")

@@ -7,17 +7,11 @@ class InventoryOptimizer:
         self.minmax_engine = MinMaxOptimizer()
 
     def generate_optimization_opportunities(self, df_sku: pd.DataFrame, df_trx: pd.DataFrame) -> pd.DataFrame:
-        """
-        Mengidentifikasi peluang pengurangan inventaris dan optimasi pembelian:
-        - OVERSTOCK: Stok saat ini > Dynamic Max → Harus dikurangi
-        - UNDERSTOCK: Stok saat ini < Dynamic Min ROP → Harus segera dipesan
-        - SLOW-MOVING: Kelas C + Z → Pertimbangkan dihapus
-        """
         abc_result = self.minmax_engine.calculate_abc_xyz_and_minmax(df_sku, df_trx)
 
         df_opt = pd.merge(
             abc_result,
-            df_sku[['SKU_ID', 'Current_Stock']],
+            df_sku[['SKU_ID', 'Current_Stock', 'Image_URL']],
             on='SKU_ID',
             how='left'
         )
@@ -42,6 +36,6 @@ class InventoryOptimizer:
 
         df_opt = df_opt.sort_values('Excess_Value', ascending=False).reset_index(drop=True)
 
-        return df_opt[['SKU_ID', 'Description', 'ABC_Class', 'XYZ_Class', 'Current_Stock',
+        return df_opt[['SKU_ID', 'Description', 'Image_URL', 'ABC_Class', 'XYZ_Class', 'Current_Stock',
                         'Dynamic_Min_ROP', 'Dynamic_Max', 'Unit_Price', 'Action',
                         'Excess_Qty', 'Excess_Value', 'Shortage_Qty', 'Shortage_Value']]

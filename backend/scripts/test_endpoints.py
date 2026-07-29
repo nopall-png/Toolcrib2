@@ -34,10 +34,10 @@ def run_tests():
             all_passed = False
 
     # Test Forecast Endpoint explicitly
-    print(f"Testing {BASE_URL}/forecast/TL-MKT-01 ...", end=" ")
+    print(f"Testing {BASE_URL}/forecast/BRG-CUT-015 ...", end=" ")
     try:
-        res = requests.get(f"{BASE_URL}/forecast/TL-MKT-01", timeout=10)
-        if res.status_code == 200 or res.status_code == 404: # 404 is valid if item has no transaction history
+        res = requests.get(f"{BASE_URL}/forecast/BRG-CUT-015", timeout=10)
+        if res.status_code == 200 or res.status_code == 404:
             print("✅ PASSED")
         else:
             print(f"❌ FAILED (Status: {res.status_code})")

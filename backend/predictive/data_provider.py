@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 from supabase import create_client
 
-# Memuat variabel lingkungan
+# Memuat variabel lingkungan dari root proyek
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '..', '.env.local'))
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
 load_dotenv()
@@ -42,7 +42,7 @@ def get_all_items() -> pd.DataFrame:
     Mengambil seluruh master data dari tools beserta machine_impact_score base-nya.
     Kolom di-rename sesuai mapping AI Engine: code -> SKU_ID, name -> Description, dll.
     """
-    tools_data = fetch_all_rows("tools", "id, code, name, description, unit_price, lead_time_days, stock, min_stock, max_stock, unit, category, machine_impact_score, criticality_level, technical_specs")
+    tools_data = fetch_all_rows("tools", "id, code, name, description, unit_price, lead_time_days, stock, min_stock, max_stock, unit, category, machine_impact_score, criticality_level, technical_specs, image_url")
     df_sku = pd.DataFrame(tools_data)
     
     if df_sku.empty:
@@ -58,7 +58,8 @@ def get_all_items() -> pd.DataFrame:
         'max_stock': 'Max_Stock',
         'machine_impact_score': 'Base_Machine_Impact_Score',
         'criticality_level': 'Criticality_Level',
-        'technical_specs': 'Technical_Specs'
+        'technical_specs': 'Technical_Specs',
+        'image_url': 'Image_URL'
     })
     
     df_sku['Unit_Price'] = pd.to_numeric(df_sku['Unit_Price'], errors='coerce').fillna(0)
@@ -96,7 +97,7 @@ def get_transactions(tool_code=None, start_date=None, end_date=None) -> pd.DataF
     while True:
         query = supabase.table("stock_transactions").select(
             "id, transaction_type, quantity, transaction_date, tools!inner(code), user_requests!inner(status)"
-        ).eq("transaction_type", "OUT").in_("user_requests.status", ["Approved", "Issued"]) # Barang yang disisihkan (Approved) atau sudah diambil (Issued)
+        ).eq("transaction_type", "OUT").in_("user_requests.status", ["Approved", "Issued"])
         
         if tool_id:
             query = query.eq("tool_id", tool_id)
@@ -137,19 +138,12 @@ def get_transactions(tool_code=None, start_date=None, end_date=None) -> pd.DataF
 
 
 def get_machine_impact(tool_code: str) -> int:
-    """
-    Menghitung skor kekritisan final dari barang terhadap mesin:
-    Mengambil dari tabel relasi machine_tools (impact_weight per-mesin)
-    Lalu membandingkannya dengan base tools.machine_impact_score.
-    Kita ambil nilai tertinggi (paling kritis) sebagai Machine_Score final.
-    """
     tool = get_item_by_code(tool_code)
     if not tool:
         return 0
         
     base_score = int(tool.get('machine_impact_score') or 50)
     
-    # Cek relasi mesin
     res = supabase.table("machine_tools").select("impact_weight").eq("tool_id", tool['id']).execute()
     if res.data:
         max_rel_weight = max((r.get("impact_weight") or 0) for r in res.data)
@@ -159,7 +153,6 @@ def get_machine_impact(tool_code: str) -> int:
 
 
 def get_daily_usage(tool_code: str) -> float:
-    """Menghitung ADU (Average Daily Usage) spesifik untuk 1 sku berdasarkan stock_transactions."""
     df_trx = get_transactions(tool_code=tool_code)
     if df_trx.empty:
         return 0.0
@@ -169,39 +162,38 @@ def get_daily_usage(tool_code: str) -> float:
     date_max = df_trx['Date'].max()
     
     if pd.isna(date_min) or pd.isna(date_max) or date_min == date_max:
-        return float(total_qty) # Dianggap keluar 1 hari
+        return float(total_qty)
         
     days_diff = (date_max - date_min).days + 1
     adu = total_qty / days_diff
     return float(adu)
 
 
-# ==============================================================================
-# FUNGSI LEGACY COMPATIBILITY (Untuk MinMax & Prophet Engine)
-# ==============================================================================
+def update_ai_cache(payload: list) -> bool:
+    try:
+        for item in payload:
+            supabase.table("tools").update({
+                "ai_min_stock": item.get("ai_min_stock"),
+                "ai_max_stock": item.get("ai_max_stock"),
+                "abc_class": item.get("abc_class"),
+                "xyz_class": item.get("xyz_class")
+            }).eq("id", item.get("id")).execute()
+        return True
+    except Exception as e:
+        print("Failed to update AI cache in Supabase:", e)
+        return False
+
 
 def get_data():
-    """
-    Membungkus fungsi-fungsi baru ke dalam output (df_sku, df_machines, df_trx)
-    agar Engine ML lama tidak pecah (compatible).
-    Catatan:
-    - df_sku sekarang sudah punya kolom 'Machine_Score' bawaan hasil kombinasi.
-    - df_machines di-return kosong agar CriticalityClassifier tidak error/parsing manual lagi.
-    - df_trx 100% didapat dari stock_transactions (bukan dummy/user_request_items).
-    """
     df_sku = get_all_items()
     df_trx = get_transactions()
     
-    # Populate Machine_Score untuk df_sku
     if not df_sku.empty:
-        # Pre-calculate machine score untuk semua barang agar efisien
-        # 1. Ambil semua tools
         tools_dict = {row['SKU_ID']: row['id'] for _, row in df_sku.iterrows() if 'id' in df_sku.columns}
         if 'id' not in df_sku.columns:
             tools_data = fetch_all_rows('tools', 'id, code')
             tools_dict = {t['code']: t['id'] for t in tools_data}
             
-        # 2. Ambil semua relasi machine_tools
         mt_data = fetch_all_rows('machine_tools', 'tool_id, impact_weight')
         mt_scores = {}
         for r in mt_data:
@@ -210,7 +202,6 @@ def get_data():
             if tid not in mt_scores or weight > mt_scores[tid]:
                 mt_scores[tid] = weight
                 
-        # 3. Gabungkan
         scores = []
         for _, row in df_sku.iterrows():
             code = row['SKU_ID']
@@ -222,8 +213,6 @@ def get_data():
             
         df_sku['Machine_Score'] = scores
 
-    # df_machines dikembalikan kosong karena kita tidak perlu lagi mem-parsing comma separated string
-    # Logicnya sudah dikerjakan di atas dan masuk sebagai Machine_Score di df_sku
     df_machines = pd.DataFrame(columns=['Machine_ID', 'Machine_Name', 'Location', 'Downtime_Impact', 'Required_Parts'])
     
     return df_sku, df_machines, df_trx

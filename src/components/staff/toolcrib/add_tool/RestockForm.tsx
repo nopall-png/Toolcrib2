@@ -109,7 +109,7 @@ export const RestockForm: React.FC<RestockFormProps> = ({ onSuccess }) => {
       const formData = new FormData();
       formData.append("file", file);
 
-      const res = await fetch("http://localhost:8000/api/parse-restock", {
+      const res = await fetch("http://localhost:8001/api/parse-restock", {
         method: "POST",
         body: formData,
       });
