@@ -55,35 +55,35 @@ export const UserRequestsView: React.FC = () => {
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       {/* Header */}
-      <div className="flex items-center space-x-3 mb-2">
-        <ClipboardList className="w-8 h-8 text-slate-800" />
+      <div className="flex items-center space-x-5 mb-6">
+        <ClipboardList className="w-12 h-12 text-slate-800" />
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">Request Peminjaman</h2>
-          <p className="text-sm text-slate-500">Kelola permintaan peminjaman alat dari user/divisi</p>
+          <h2 className="text-4xl font-bold text-slate-900">Request Peminjaman</h2>
+          <p className="text-lg text-slate-500 mt-2">Kelola permintaan peminjaman alat dari user/divisi</p>
         </div>
       </div>
 
       {/* Control Bar (Search & Filter) */}
-      <div className="bg-white p-4 rounded-md border border-slate-200 shadow-sm flex flex-col sm:flex-row gap-4">
+      <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row gap-6">
         <div className="relative flex-1">
           <input
             type="text"
             placeholder="Cari Nama Pemohon atau Divisi..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-slate-400"
+            className="w-full pl-14 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-xl text-xl focus:outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-200 transition-all"
           />
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+          <Search className="w-6 h-6 text-slate-400 absolute left-5 top-4" />
         </div>
 
-        <div className="relative min-w-[200px]">
-          <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-            <Filter className="w-4 h-4 text-slate-400" />
+        <div className="relative min-w-[280px]">
+          <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none">
+            <Filter className="w-6 h-6 text-slate-400" />
           </div>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-md text-sm font-semibold text-slate-700 focus:outline-none focus:border-slate-400 appearance-none cursor-pointer"
+            className="w-full pl-14 pr-6 py-4 bg-white border border-slate-200 rounded-xl text-xl font-semibold text-slate-700 focus:outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-200 appearance-none cursor-pointer transition-all"
           >
             <option value="All">Semua Status</option>
             <option value="Pending">Menunggu (Pending)</option>
@@ -96,7 +96,7 @@ export const UserRequestsView: React.FC = () => {
       {/* Requests List */}
       <div className="space-y-4">
         {filteredRequests.length === 0 ? (
-          <div className="bg-white rounded-md border border-slate-200 p-12 text-center text-sm text-slate-500 shadow-sm">
+          <div className="bg-white rounded-xl border border-slate-200 p-16 text-center text-xl text-slate-500 shadow-sm">
             Tidak ada request.
           </div>
         ) : (

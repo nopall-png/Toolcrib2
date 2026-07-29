@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Filter, Info, AlertTriangle, BrainCircuit, CheckCircle2, CheckCircle, Loader2 } from 'lucide-react';
-import { fetchDuplicates } from '@/src/lib/api-ai';
+import React, { useState } from 'react';
+import { Filter, Info, AlertTriangle, BrainCircuit, CheckCircle2, CheckCircle, Search } from 'lucide-react';
+import { INITIAL_TOOLS } from '@/src/lib/mock';
 
 type DuplicateStatus = 'PENDING' | 'MERGED';
 
@@ -16,39 +16,21 @@ interface DuplicateItemResponse {
 
 export const DuplicateDetectionTab = () => {
   const [filterThreshold, setFilterThreshold] = useState(80);
+  const [searchTerm, setSearchTerm] = useState('');
   const [expandedItem, setExpandedItem] = useState<number | null>(null);
   const [duplicates, setDuplicates] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setIsLoading(true);
-        const res = await fetchDuplicates();
-        if (res.status === 'success') {
-          const mappedData = res.data.map((item: any) => ({
-            sku1: item.SKU_1,
-            desc1: item.Desc_1,
-            img1: 'https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?w=150&q=80',
-            sku2: item.SKU_2,
-            desc2: item.Desc_2,
-            img2: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=150&q=80',
-            score: (item.Similarity_Score).toFixed(1),
-            status: 'PENDING' as DuplicateStatus
-          }));
-          setDuplicates(mappedData);
-        }
-      } catch (error) {
-        console.error("Gagal memuat data duplikat", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadData();
-  }, []);
-
-  const filteredDuplicates = duplicates.filter((item) => Number(item.score) >= filterThreshold);
+  const filteredDuplicates = duplicates.filter((item) => {
+    const matchesScore = item.score >= filterThreshold;
+    const searchLower = searchTerm.toLowerCase();
+    const matchesSearch = item.sku1.toLowerCase().includes(searchLower) || 
+                          item.sku2.toLowerCase().includes(searchLower) ||
+                          item.desc1.toLowerCase().includes(searchLower) ||
+                          item.desc2.toLowerCase().includes(searchLower);
+    return matchesScore && matchesSearch;
+  });
 
   const handleAction = (idx: number, actionType: 'MERGE' | 'IGNORE') => {
     const newDuplicates = [...duplicates];
@@ -81,6 +63,8 @@ export const DuplicateDetectionTab = () => {
 
   return (
     <div className="space-y-4">
+
+      {/* Notifikasi Sukses Simulasi */}
       {toastMsg && (
         <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3 rounded-xl flex items-center space-x-2 text-sm font-bold shadow-sm animate-in fade-in slide-in-from-top-2">
           <CheckCircle2 className="w-5 h-5 text-emerald-500" />
@@ -97,23 +81,38 @@ export const DuplicateDetectionTab = () => {
           <p className="text-xs text-slate-500 mt-1">AI menganalisis kemiripan nama, merek, dan spesifikasi barang untuk menemukan item yang mungkin dicatat dua kali di dalam sistem.</p>
         </div>
         
-        <div className="flex items-center space-x-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl">
-          <Filter className="w-4 h-4 text-slate-400" />
-          <select 
-            value={filterThreshold} 
-            onChange={(e) => setFilterThreshold(Number(e.target.value))}
-            className="bg-transparent text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
-          >
-            <option value={0}>Semua Kecocokan (&gt;0%)</option>
-            <option value={80}>Sangat Mirip (&gt;80%)</option>
-            <option value={90}>Identik (&gt;90%)</option>
-          </select>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          {/* Search Input */}
+          <div className="flex items-center space-x-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl w-full sm:w-auto focus-within:border-indigo-400 focus-within:ring-1 focus-within:ring-indigo-400 transition-all">
+            <Search className="w-4 h-4 text-slate-400" />
+            <input 
+              type="text" 
+              placeholder="Cari SKU atau nama..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="bg-transparent text-xs font-semibold text-slate-700 focus:outline-none w-full sm:w-48 placeholder:font-normal"
+            />
+          </div>
+
+          {/* Filter Dropdown */}
+          <div className="flex items-center space-x-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl w-full sm:w-auto">
+            <Filter className="w-4 h-4 text-slate-400" />
+            <select 
+              value={filterThreshold} 
+              onChange={(e) => setFilterThreshold(Number(e.target.value))}
+              className="bg-transparent text-xs font-bold text-slate-700 focus:outline-none cursor-pointer w-full sm:w-auto"
+            >
+              <option value={0}>Semua Kecocokan (&gt;0%)</option>
+              <option value={80}>Sangat Mirip (&gt;80%)</option>
+              <option value={90}>Identik (&gt;90%)</option>
+            </select>
+          </div>
         </div>
       </div>
-      
-      <div className="overflow-x-auto border border-slate-200 rounded-xl">
-        <table className="w-full text-left text-sm whitespace-nowrap">
-          <thead className="bg-slate-50 text-slate-600 font-semibold text-xs border-b border-slate-200">
+
+      <div className="overflow-x-auto border border-slate-200 rounded-xl mt-6">
+        <table className="w-full text-left text-xl whitespace-nowrap">
+          <thead className="bg-slate-50 text-slate-600 font-semibold text-lg border-b border-slate-200">
             <tr>
               <th className="p-4">Item 1 (Terindikasi)</th>
               <th className="p-4">Item 2 (Mirip/Duplikat)</th>
@@ -163,7 +162,7 @@ export const DuplicateDetectionTab = () => {
                           <span>Terkonfirmasi</span>
                         </span>
                       ) : (
-                        <button 
+                        <button
                           onClick={() => setExpandedItem(expandedItem === idx ? null : idx)}
                           className="text-xs text-indigo-600 font-bold hover:underline px-3 py-1.5 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors"
                         >
@@ -172,7 +171,7 @@ export const DuplicateDetectionTab = () => {
                       )}
                     </td>
                   </tr>
-                  
+
                   {/* Expanded Details Row */}
                   {expandedItem === idx && item.status !== 'MERGED' && (
                     <tr className="bg-indigo-50/30">
@@ -189,17 +188,17 @@ export const DuplicateDetectionTab = () => {
                               <li><strong>Saran Tindakan:</strong> Pastikan secara fisik di gudang. Jika terbukti sama, konfirmasi duplikat agar sistem dapat menyatukan stoknya.</li>
                             </ul>
                           </div>
-                          
+
                           <div className="flex-1 flex flex-col justify-end space-y-3 border-t md:border-t-0 md:border-l border-indigo-100 pt-4 md:pt-0 md:pl-6">
                             <p className="text-xs text-slate-500">Pilih tindakan untuk data ganda ini:</p>
                             <div className="flex gap-2">
-                              <button 
+                              <button
                                 onClick={() => handleAction(idx, 'MERGE')}
                                 className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 font-bold text-xs transition-colors shadow-sm"
                               >
                                 Ya, Ini Duplikat
                               </button>
-                              <button 
+                              <button
                                 onClick={() => handleAction(idx, 'IGNORE')}
                                 className="flex-1 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 font-bold text-xs transition-colors"
                               >
