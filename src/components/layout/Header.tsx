@@ -104,18 +104,30 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, onOpenCart }) => {
             )}
           </>
         ) : (
-          /* Staff Profile Pill */
-          <div className="flex items-center space-x-4 bg-slate-100/80 px-5 py-2.5 rounded-xl border border-slate-200/60">
-            <div className="flex items-center space-x-2 text-base text-slate-700 font-semibold">
-              <Wrench className="w-5 h-5 text-red-600" />
-              <span>Role: <strong className="text-red-600">{session.role}</strong></span>
+          <>
+            {/* AI Chatbot Button */}
+            <button
+              onClick={() => setIsChatbotOpen(true)}
+              className="flex items-center space-x-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 px-4 py-2.5 rounded-xl border border-indigo-200 transition-colors font-bold text-sm shadow-sm"
+              title="Buka Asisten AI"
+            >
+              <Bot className="w-5 h-5" />
+              <span className="hidden sm:inline">Asisten AI</span>
+            </button>
+
+            {/* Staff Profile Pill */}
+            <div className="flex items-center space-x-4 bg-slate-100/80 px-5 py-2.5 rounded-xl border border-slate-200/60">
+              <div className="flex items-center space-x-2 text-base text-slate-700 font-semibold">
+                <Wrench className="w-5 h-5 text-red-600" />
+                <span>Role: <strong className="text-red-600">{session.role}</strong></span>
+              </div>
+              <span className="text-slate-300">|</span>
+              <div className="flex items-center space-x-2 text-base text-slate-700 font-semibold">
+                <ShieldCheck className="w-5 h-5 text-red-600" />
+                <span>{session.userName}</span>
+              </div>
             </div>
-            <span className="text-slate-300">|</span>
-            <div className="flex items-center space-x-2 text-base text-slate-700 font-semibold">
-              <ShieldCheck className="w-5 h-5 text-red-600" />
-              <span>{session.userName}</span>
-            </div>
-          </div>
+          </>
         )}
 
         <div className="w-px h-6 bg-slate-200 mx-2"></div>

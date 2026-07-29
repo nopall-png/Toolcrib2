@@ -5,3 +5,5 @@ sentence-transformers
 scikit-learn
 fastapi
 uvicorn[standard]
+supabase
+python-dotenv

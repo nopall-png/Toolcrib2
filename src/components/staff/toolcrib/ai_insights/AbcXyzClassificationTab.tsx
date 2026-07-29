@@ -1,17 +1,47 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Info, Filter } from 'lucide-react';
-import { INITIAL_TOOLS } from '@/src/lib/mock';
+import React, { useState, useEffect } from 'react';
+import { Info, Filter, Loader2 } from 'lucide-react';
+import { fetchMinMax } from '@/src/lib/api-ai';
+
+interface AbcXyzItem {
+  SKU_ID: string;
+  Description: string;
+  ABC_Class: string;
+  XYZ_Class: string;
+  Unit_Price: number;
+  Total_Usage: number;
+}
 
 export const AbcXyzClassificationTab = () => {
   const [filterClass, setFilterClass] = useState('ALL');
+  const [abcXyzData, setAbcXyzData] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const abcXyzData = [
-    { sku: INITIAL_TOOLS[6].code, desc: INITIAL_TOOLS[6].name, unitPrice: 'Rp 250,000', yearlyUsage: 1200, abc: 'A', xyz: 'X' },
-    { sku: INITIAL_TOOLS[1].code, desc: INITIAL_TOOLS[1].name, unitPrice: 'Rp 3,500,000', yearlyUsage: 45, abc: 'A', xyz: 'Y' },
-    { sku: INITIAL_TOOLS[7].code, desc: INITIAL_TOOLS[7].name, unitPrice: 'Rp 15,000', yearlyUsage: 5, abc: 'C', xyz: 'Z' },
-  ];
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setIsLoading(true);
+        const res = await fetchMinMax();
+        if (res.status === 'success') {
+          const mappedData = res.data.map((item: any) => ({
+            sku: item.SKU_ID,
+            desc: item.Description,
+            unitPrice: `Rp ${(item.Unit_Price || 0).toLocaleString('id-ID')}`,
+            yearlyUsage: item.Total_Qty_Yearly || 0,
+            abc: item.ABC_Class,
+            xyz: item.XYZ_Class
+          }));
+          setAbcXyzData(mappedData);
+        }
+      } catch (error) {
+        console.error("Gagal memuat data ABC/XYZ", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadData();
+  }, []);
 
   const filteredData = abcXyzData.filter((item) => {
     if (filterClass === 'ALL') return true;
@@ -19,6 +49,15 @@ export const AbcXyzClassificationTab = () => {
     if (filterClass.startsWith('XYZ-')) return item.xyz === filterClass.replace('XYZ-', '');
     return true;
   });
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+        <Loader2 className="w-10 h-10 animate-spin mb-4 text-indigo-500" />
+        <p className="font-semibold text-slate-600">AI sedang mengklasifikasikan barang (ABC/XYZ Analysis)...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -89,7 +128,9 @@ export const AbcXyzClassificationTab = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {filteredData.map((item, idx) => (
+            {filteredData.length === 0 ? (
+               <tr><td colSpan={6} className="p-8 text-center text-slate-500">Tidak ada data</td></tr>
+            ) : filteredData.map((item, idx) => (
               <tr key={idx} className="hover:bg-slate-50">
                 <td className="p-4 font-bold text-slate-700">{item.sku}</td>
                 <td className="p-4 text-slate-600">{item.desc}</td>

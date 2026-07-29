@@ -1,52 +1,229 @@
 import pandas as pd
-import numpy as np
-from datetime import datetime, timedelta
+import os
+from dotenv import load_dotenv
+from supabase import create_client
 
-def get_mock_data():
+# Memuat variabel lingkungan
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '..', '.env.local'))
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
+load_dotenv()
+
+SUPABASE_URL = os.getenv("NEXT_PUBLIC_SUPABASE_URL")
+SUPABASE_KEY = os.getenv("NEXT_PUBLIC_SUPABASE_ANON_KEY")
+
+if not SUPABASE_URL or not SUPABASE_KEY:
+    raise RuntimeError(
+        "Variabel NEXT_PUBLIC_SUPABASE_URL dan NEXT_PUBLIC_SUPABASE_ANON_KEY "
+        "harus diset di file .env.local pada root proyek."
+    )
+
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+
+def fetch_all_rows(table_name, select_query="*"):
+    """Helper untuk mengambil data lebih dari 1000 rows (mengatasi limit Supabase)."""
+    all_data = []
+    limit = 1000
+    offset = 0
+    while True:
+        res = supabase.table(table_name).select(select_query).range(offset, offset + limit - 1).execute()
+        data = res.data
+        if not data:
+            break
+        all_data.extend(data)
+        if len(data) < limit:
+            break
+        offset += limit
+    return all_data
+
+
+def get_all_items() -> pd.DataFrame:
     """
-    Menghasilkan data dummy untuk keperluan simulasi API AI.
-    Data ini meniru skema database PostgreSQL Toolcrib.
+    Mengambil seluruh master data dari tools beserta machine_impact_score base-nya.
+    Kolom di-rename sesuai mapping AI Engine: code -> SKU_ID, name -> Description, dll.
     """
-    # 1. Data Master SKU
-    sku_data = [
-        {'SKU_ID': 'SKU001', 'Description': 'Palu Besi 5kg', 'Unit_Price': 50000, 'Lead_Time_Days': 3, 'Current_Stock': 50, 'Criticality_Level': 'LOW'},
-        {'SKU_ID': 'SKU002', 'Description': 'Palu Besi Berat 5 kg', 'Unit_Price': 51000, 'Lead_Time_Days': 3, 'Current_Stock': 10, 'Criticality_Level': 'LOW'}, # Duplikat SKU001
-        {'SKU_ID': 'SKU003', 'Description': 'Motor Servo Yaskawa 2kW', 'Unit_Price': 15000000, 'Lead_Time_Days': 45, 'Current_Stock': 1, 'Criticality_Level': 'HIGH'},
-        {'SKU_ID': 'SKU004', 'Description': 'Baut M10x50mm', 'Unit_Price': 1000, 'Lead_Time_Days': 7, 'Current_Stock': 2000, 'Criticality_Level': 'MEDIUM'},
-        {'SKU_ID': 'SKU005', 'Description': 'Obeng Plus Phillips', 'Unit_Price': 15000, 'Lead_Time_Days': 2, 'Current_Stock': 150, 'Criticality_Level': 'LOW'},
-    ]
-    df_sku = pd.DataFrame(sku_data)
+    tools_data = fetch_all_rows("tools", "id, code, name, description, unit_price, lead_time_days, stock, min_stock, max_stock, unit, category, machine_impact_score, criticality_level, technical_specs")
+    df_sku = pd.DataFrame(tools_data)
     
-    # 2. Data Mesin
-    machine_data = [
-        {'Machine_ID': 'MAC-INJ-01', 'Required_Parts': 'SKU003', 'Downtime_Impact': 'HIGH'},
-        {'Machine_ID': 'MAC-ASM-01', 'Required_Parts': 'SKU001, SKU004, SKU005', 'Downtime_Impact': 'LOW'},
-    ]
-    df_machines = pd.DataFrame(machine_data)
+    if df_sku.empty:
+        return pd.DataFrame()
+
+    df_sku = df_sku.rename(columns={
+        'code': 'SKU_ID',
+        'name': 'Description',
+        'unit_price': 'Unit_Price',
+        'lead_time_days': 'Lead_Time_Days',
+        'stock': 'Current_Stock',
+        'min_stock': 'Min_Stock',
+        'max_stock': 'Max_Stock',
+        'machine_impact_score': 'Base_Machine_Impact_Score',
+        'criticality_level': 'Criticality_Level',
+        'technical_specs': 'Technical_Specs'
+    })
     
-    # 3. Data Transaksi Harian (1 Tahun Terakhir)
-    np.random.seed(42)
-    dates = pd.date_range(end=datetime.today(), periods=365).tolist()
+    df_sku['Unit_Price'] = pd.to_numeric(df_sku['Unit_Price'], errors='coerce').fillna(0)
+    df_sku['Lead_Time_Days'] = pd.to_numeric(df_sku['Lead_Time_Days'], errors='coerce').fillna(7).astype(int)
+    df_sku['Current_Stock'] = pd.to_numeric(df_sku['Current_Stock'], errors='coerce').fillna(0).astype(int)
+    df_sku['Base_Machine_Impact_Score'] = pd.to_numeric(df_sku['Base_Machine_Impact_Score'], errors='coerce').fillna(50).astype(int)
+
+    return df_sku
+
+
+def get_item_by_code(code: str) -> dict:
+    """Mengambil satu item spesifik berdasarkan sku_id (tools.code)."""
+    res = supabase.table("tools").select("*").eq("code", code).limit(1).execute()
+    return res.data[0] if res.data else None
+
+
+def get_transactions(tool_code=None, start_date=None, end_date=None) -> pd.DataFrame:
+    """
+    Mengambil data riwayat pemakaian barang murni dari stock_transactions.
+    Bisa difilter per tool_code maupun rentang tanggal tertentu.
+    Menggunakan pagination untuk menghindari limit 1000 baris dari Supabase.
+    """
+    all_data = []
+    limit = 1000
+    offset = 0
     
-    trx_list = []
-    for d in dates:
-        # SKU001: Dipakai rutin (1-2 per minggu)
-        if np.random.rand() > 0.8:
-            trx_list.append({'SKU_ID': 'SKU001', 'Date': d, 'Quantity_Issued': np.random.randint(1, 3)})
+    tool_id = None
+    if tool_code:
+        tool = get_item_by_code(tool_code)
+        if tool:
+            tool_id = tool['id']
+        else:
+            return pd.DataFrame(columns=['SKU_ID', 'Date', 'Quantity_Issued'])
+
+    while True:
+        query = supabase.table("stock_transactions").select(
+            "id, transaction_type, quantity, transaction_date, tools!inner(code), user_requests!inner(status)"
+        ).eq("transaction_type", "OUT").in_("user_requests.status", ["Approved", "Issued"]) # Barang yang disisihkan (Approved) atau sudah diambil (Issued)
+        
+        if tool_id:
+            query = query.eq("tool_id", tool_id)
+        if start_date:
+            query = query.gte("transaction_date", start_date)
+        if end_date:
+            query = query.lte("transaction_date", end_date)
             
-        # SKU003: Jarang dipakai
-        if np.random.rand() > 0.98:
-            trx_list.append({'SKU_ID': 'SKU003', 'Date': d, 'Quantity_Issued': 1})
+        res = query.range(offset, offset + limit - 1).execute()
+        if not res.data:
+            break
+        all_data.extend(res.data)
+        if len(res.data) < limit:
+            break
+        offset += limit
+        
+    data = all_data
+    
+    if not data:
+        return pd.DataFrame(columns=['SKU_ID', 'Date', 'Quantity_Issued'])
+
+    rows = []
+    for row in data:
+        code_val = row.get("tools", {}).get("code")
+        if code_val:
+            rows.append({
+                'SKU_ID': code_val,
+                'Date': row.get("transaction_date"),
+                'Quantity_Issued': row.get("quantity", 0)
+            })
+
+    df_trx = pd.DataFrame(rows)
+    if not df_trx.empty:
+        df_trx['Date'] = pd.to_datetime(df_trx['Date'], errors='coerce')
+        df_trx = df_trx.dropna(subset=['Date'])
+        
+    return df_trx
+
+
+def get_machine_impact(tool_code: str) -> int:
+    """
+    Menghitung skor kekritisan final dari barang terhadap mesin:
+    Mengambil dari tabel relasi machine_tools (impact_weight per-mesin)
+    Lalu membandingkannya dengan base tools.machine_impact_score.
+    Kita ambil nilai tertinggi (paling kritis) sebagai Machine_Score final.
+    """
+    tool = get_item_by_code(tool_code)
+    if not tool:
+        return 0
+        
+    base_score = int(tool.get('machine_impact_score') or 50)
+    
+    # Cek relasi mesin
+    res = supabase.table("machine_tools").select("impact_weight").eq("tool_id", tool['id']).execute()
+    if res.data:
+        max_rel_weight = max((r.get("impact_weight") or 0) for r in res.data)
+        return max(base_score, max_rel_weight)
+    
+    return base_score
+
+
+def get_daily_usage(tool_code: str) -> float:
+    """Menghitung ADU (Average Daily Usage) spesifik untuk 1 sku berdasarkan stock_transactions."""
+    df_trx = get_transactions(tool_code=tool_code)
+    if df_trx.empty:
+        return 0.0
+        
+    total_qty = df_trx['Quantity_Issued'].sum()
+    date_min = df_trx['Date'].min()
+    date_max = df_trx['Date'].max()
+    
+    if pd.isna(date_min) or pd.isna(date_max) or date_min == date_max:
+        return float(total_qty) # Dianggap keluar 1 hari
+        
+    days_diff = (date_max - date_min).days + 1
+    adu = total_qty / days_diff
+    return float(adu)
+
+
+# ==============================================================================
+# FUNGSI LEGACY COMPATIBILITY (Untuk MinMax & Prophet Engine)
+# ==============================================================================
+
+def get_data():
+    """
+    Membungkus fungsi-fungsi baru ke dalam output (df_sku, df_machines, df_trx)
+    agar Engine ML lama tidak pecah (compatible).
+    Catatan:
+    - df_sku sekarang sudah punya kolom 'Machine_Score' bawaan hasil kombinasi.
+    - df_machines di-return kosong agar CriticalityClassifier tidak error/parsing manual lagi.
+    - df_trx 100% didapat dari stock_transactions (bukan dummy/user_request_items).
+    """
+    df_sku = get_all_items()
+    df_trx = get_transactions()
+    
+    # Populate Machine_Score untuk df_sku
+    if not df_sku.empty:
+        # Pre-calculate machine score untuk semua barang agar efisien
+        # 1. Ambil semua tools
+        tools_dict = {row['SKU_ID']: row['id'] for _, row in df_sku.iterrows() if 'id' in df_sku.columns}
+        if 'id' not in df_sku.columns:
+            tools_data = fetch_all_rows('tools', 'id, code')
+            tools_dict = {t['code']: t['id'] for t in tools_data}
             
-        # SKU004: Fast moving, stabil
-        if np.random.rand() > 0.3:
-            trx_list.append({'SKU_ID': 'SKU004', 'Date': d, 'Quantity_Issued': np.random.randint(5, 50)})
+        # 2. Ambil semua relasi machine_tools
+        mt_data = fetch_all_rows('machine_tools', 'tool_id, impact_weight')
+        mt_scores = {}
+        for r in mt_data:
+            tid = r['tool_id']
+            weight = r.get('impact_weight') or 50
+            if tid not in mt_scores or weight > mt_scores[tid]:
+                mt_scores[tid] = weight
+                
+        # 3. Gabungkan
+        scores = []
+        for _, row in df_sku.iterrows():
+            code = row['SKU_ID']
+            base_score = row.get('Base_Machine_Impact_Score', 50)
+            tid = tools_dict.get(code)
+            rel_score = mt_scores.get(tid, 0) if tid else 0
+            final_score = max(base_score, rel_score)
+            scores.append(final_score)
             
-        # SKU005: Sangat sering
-        if np.random.rand() > 0.5:
-            trx_list.append({'SKU_ID': 'SKU005', 'Date': d, 'Quantity_Issued': np.random.randint(2, 10)})
-            
-    df_trx = pd.DataFrame(trx_list)
-    df_trx['Date'] = pd.to_datetime(df_trx['Date'])
+        df_sku['Machine_Score'] = scores
+
+    # df_machines dikembalikan kosong karena kita tidak perlu lagi mem-parsing comma separated string
+    # Logicnya sudah dikerjakan di atas dan masuk sebagai Machine_Score di df_sku
+    df_machines = pd.DataFrame(columns=['Machine_ID', 'Machine_Name', 'Location', 'Downtime_Impact', 'Required_Parts'])
     
     return df_sku, df_machines, df_trx

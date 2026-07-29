@@ -1,47 +1,65 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Filter, Info, AlertTriangle, BrainCircuit, CheckCircle2, CheckCircle } from 'lucide-react';
+import { Filter, Info, AlertTriangle, BrainCircuit, CheckCircle2, CheckCircle, Search } from 'lucide-react';
 import { INITIAL_TOOLS } from '@/src/lib/mock';
 
 type DuplicateStatus = 'PENDING' | 'MERGED';
 
-const INITIAL_DUPLICATES = [
-  { sku1: INITIAL_TOOLS[0].code, desc1: INITIAL_TOOLS[0].name, img1: INITIAL_TOOLS[0].imageUrl, sku2: INITIAL_TOOLS[1].code, desc2: INITIAL_TOOLS[1].name, img2: INITIAL_TOOLS[1].imageUrl, score: 92.5, status: 'PENDING' as DuplicateStatus },
-  { sku1: INITIAL_TOOLS[5].code, desc1: INITIAL_TOOLS[5].name, img1: INITIAL_TOOLS[5].imageUrl, sku2: INITIAL_TOOLS[6].code, desc2: INITIAL_TOOLS[6].name, img2: INITIAL_TOOLS[6].imageUrl, score: 88.1, status: 'PENDING' as DuplicateStatus },
-  { sku1: INITIAL_TOOLS[3].code, desc1: INITIAL_TOOLS[3].name, img1: INITIAL_TOOLS[3].imageUrl, sku2: INITIAL_TOOLS[4].code, desc2: INITIAL_TOOLS[4].name, img2: INITIAL_TOOLS[4].imageUrl, score: 95.3, status: 'PENDING' as DuplicateStatus },
-];
+interface DuplicateItemResponse {
+  Item1_SKU: string;
+  Item1_Desc: string;
+  Item2_SKU: string;
+  Item2_Desc: string;
+  Similarity_Score: number;
+}
 
 export const DuplicateDetectionTab = () => {
   const [filterThreshold, setFilterThreshold] = useState(80);
+  const [searchTerm, setSearchTerm] = useState('');
   const [expandedItem, setExpandedItem] = useState<number | null>(null);
-  const [duplicates, setDuplicates] = useState(INITIAL_DUPLICATES);
+  const [duplicates, setDuplicates] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
-  const filteredDuplicates = duplicates.filter((item) => item.score >= filterThreshold);
+  const filteredDuplicates = duplicates.filter((item) => {
+    const matchesScore = item.score >= filterThreshold;
+    const searchLower = searchTerm.toLowerCase();
+    const matchesSearch = item.sku1.toLowerCase().includes(searchLower) || 
+                          item.sku2.toLowerCase().includes(searchLower) ||
+                          item.desc1.toLowerCase().includes(searchLower) ||
+                          item.desc2.toLowerCase().includes(searchLower);
+    return matchesScore && matchesSearch;
+  });
 
   const handleAction = (idx: number, actionType: 'MERGE' | 'IGNORE') => {
     const newDuplicates = [...duplicates];
     const targetItem = newDuplicates[idx];
 
     if (actionType === 'MERGE') {
-      // Ubah status menjadi MERGED, item tetap ada di list
       targetItem.status = 'MERGED';
       setToastMsg(`Berhasil! Data ${targetItem.sku2} dikonfirmasi sebagai duplikat dari ${targetItem.sku1}.`);
     } else {
-      // Jika diabaikan, hapus dari list karena itu adalah False Positive dari AI
       newDuplicates.splice(idx, 1);
       setToastMsg(`Diabaikan. ${targetItem.sku1} dan ${targetItem.sku2} ditandai sebagai barang berbeda (Bukan Duplikat).`);
     }
 
     setDuplicates(newDuplicates);
-    setExpandedItem(null); // Tutup panel
+    setExpandedItem(null);
 
-    // Hilangkan notifikasi setelah 4 detik
     setTimeout(() => {
       setToastMsg(null);
     }, 4000);
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+        <Loader2 className="w-10 h-10 animate-spin mb-4 text-indigo-500" />
+        <p className="font-semibold text-slate-600">AI sedang mencari kesamaan barang di seluruh gudang...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -62,18 +80,33 @@ export const DuplicateDetectionTab = () => {
           </div>
           <p className="text-xs text-slate-500 mt-1">AI menganalisis kemiripan nama, merek, dan spesifikasi barang untuk menemukan item yang mungkin dicatat dua kali di dalam sistem.</p>
         </div>
+        
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          {/* Search Input */}
+          <div className="flex items-center space-x-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl w-full sm:w-auto focus-within:border-indigo-400 focus-within:ring-1 focus-within:ring-indigo-400 transition-all">
+            <Search className="w-4 h-4 text-slate-400" />
+            <input 
+              type="text" 
+              placeholder="Cari SKU atau nama..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="bg-transparent text-xs font-semibold text-slate-700 focus:outline-none w-full sm:w-48 placeholder:font-normal"
+            />
+          </div>
 
-        <div className="flex items-center space-x-3 bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl">
-          <Filter className="w-6 h-6 text-slate-400" />
-          <select
-            value={filterThreshold}
-            onChange={(e) => setFilterThreshold(Number(e.target.value))}
-            className="bg-transparent text-lg font-bold text-slate-700 focus:outline-none cursor-pointer"
-          >
-            <option value={0}>Semua Kecocokan (&gt;0%)</option>
-            <option value={80}>Sangat Mirip (&gt;80%)</option>
-            <option value={90}>Identik (&gt;90%)</option>
-          </select>
+          {/* Filter Dropdown */}
+          <div className="flex items-center space-x-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl w-full sm:w-auto">
+            <Filter className="w-4 h-4 text-slate-400" />
+            <select 
+              value={filterThreshold} 
+              onChange={(e) => setFilterThreshold(Number(e.target.value))}
+              className="bg-transparent text-xs font-bold text-slate-700 focus:outline-none cursor-pointer w-full sm:w-auto"
+            >
+              <option value={0}>Semua Kecocokan (&gt;0%)</option>
+              <option value={80}>Sangat Mirip (&gt;80%)</option>
+              <option value={90}>Identik (&gt;90%)</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -103,24 +136,22 @@ export const DuplicateDetectionTab = () => {
                   <tr className={`transition-colors ${item.status === 'MERGED' ? 'bg-emerald-50/30' : 'hover:bg-slate-50'}`}>
                     <td className="p-4">
                       <div className="flex items-center space-x-3">
-                        <img src={item.img1} alt={item.desc1} className="w-10 h-10 rounded-lg object-cover border border-slate-200 shrink-0" />
                         <div>
                           <span className="font-bold text-slate-700 block">{item.sku1}</span>
-                          <span className="text-slate-500 text-xs">{item.desc1}</span>
+                          <span className="text-slate-500 text-xs truncate max-w-[200px] block">{item.desc1}</span>
                         </div>
                       </div>
                     </td>
                     <td className="p-4">
                       <div className="flex items-center space-x-3">
-                        <img src={item.img2} alt={item.desc2} className="w-10 h-10 rounded-lg object-cover border border-slate-200 shrink-0" />
                         <div>
                           <span className="font-bold text-slate-700 block">{item.sku2}</span>
-                          <span className="text-slate-500 text-xs">{item.desc2}</span>
+                          <span className="text-slate-500 text-xs truncate max-w-[200px] block">{item.desc2}</span>
                         </div>
                       </div>
                     </td>
                     <td className="p-4">
-                      <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold" title="Skor di atas 80% menandakan kemungkinan barang ini adalah duplikat">
+                      <span className={`px-2 py-1 ${Number(item.score) >= 90 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'} rounded-full text-xs font-bold`} title="Skor di atas 80% menandakan kemungkinan barang ini adalah duplikat">
                         {item.score}%
                       </span>
                     </td>

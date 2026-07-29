@@ -28,7 +28,7 @@ export const UserHistoryTab: React.FC = () => {
   ).filter(filterFn);
 
   const completedRequests = myRequests.filter(
-    (req) => req.status === 'Issued' || req.status === 'Returned' || req.status === 'Rejected'
+    (req) => req.status === 'Issued' || req.status === 'Returned' || req.status === 'Rejected' || req.status === 'Cancelled'
   ).filter(filterFn);
 
   return (

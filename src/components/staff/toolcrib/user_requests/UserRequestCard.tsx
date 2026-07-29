@@ -10,7 +10,7 @@ interface UserRequestCardProps {
 }
 
 export const UserRequestCard: React.FC<UserRequestCardProps> = ({ req, tools, onOpenReject }) => {
-  const { updateUserRequestStatus, updateUserRequestItemStatus } = useAppStore();
+  const { updateUserRequestStatus, updateUserRequestItemStatus, isProcessingRPC } = useAppStore();
   const [isExpanded, setIsExpanded] = useState<boolean>(true);
 
   // If Non-Standard, the whole request is treated as one item
@@ -74,6 +74,11 @@ export const UserRequestCard: React.FC<UserRequestCardProps> = ({ req, tools, on
           {req.status === 'Rejected' && (
             <div className="py-4 px-8 bg-rose-50 border border-rose-100 rounded-2xl">
               <span className="text-base font-bold text-rose-600">DITOLAK SEPENUHNYA</span>
+            </div>
+          )}
+          {req.status === 'Cancelled' && (
+            <div className="py-2 px-6 bg-slate-100 border border-slate-200 rounded-md">
+              <span className="text-xs font-bold text-slate-500">BATAL DIAMBIL</span>
             </div>
           )}
         </div>
@@ -143,6 +148,7 @@ export const UserRequestCard: React.FC<UserRequestCardProps> = ({ req, tools, on
                     onApprove={() => handleApproveItem(item.toolId)}
                     onReject={() => onOpenReject(req.id, item.toolId)}
                     isParentPending={req.status === 'Pending' && !allItemsApprovedOrRejected}
+                    disabled={isProcessingRPC}
                   />
                 );
               })

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   BrainCircuit,
   Copy,
@@ -13,6 +13,7 @@ import {
   AlertOctagon,
   TrendingUp
 } from 'lucide-react';
+import { supabase } from '@/src/lib/supabase';
 import { DuplicateDetectionTab } from './DuplicateDetectionTab';
 import { CriticalSparesTab } from './CriticalSparesTab';
 import { StockForecastTab } from './StockForecastTab';
@@ -24,6 +25,48 @@ type AiTab = 'abcxyz' | 'duplicates' | 'critical' | 'forecast' | 'optimization' 
 
 export const AiInsightsView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AiTab>('duplicates');
+  const [summary, setSummary] = useState({
+    health_score: 0,
+    class_a_count: 0,
+    critical_sku_count: 0,
+    optimization_value: 0
+  });
+
+  useEffect(() => {
+    const loadSummary = async () => {
+      try {
+        const { data, error } = await supabase.from('tools').select('stock, ai_min_stock, ai_max_stock, abc_class');
+        if (error) throw error;
+        if (data) {
+          let critical = 0;
+          let classA = 0;
+          let excessValue = 0; // Simplified for UI speed, actual value from optimization engine
+          
+          data.forEach((t: any) => {
+            if (t.stock <= (t.ai_min_stock || 1)) critical++;
+            if (t.abc_class === 'A') classA++;
+            // Estimation of excess value assuming 500k avg price if unit_price isn't pulled
+            if (t.stock > (t.ai_max_stock || 2)) {
+               excessValue += (t.stock - (t.ai_max_stock || 2)) * 100000;
+            }
+          });
+          
+          const total = data.length || 1;
+          const health = Math.floor(((total - critical) / total) * 100);
+          
+          setSummary({
+            health_score: health,
+            class_a_count: classA,
+            critical_sku_count: critical,
+            optimization_value: excessValue
+          });
+        }
+      } catch (err) {
+        console.error("Failed to fetch dashboard summary from Supabase:", err);
+      }
+    };
+    loadSummary();
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -50,8 +93,8 @@ export const AiInsightsView: React.FC = () => {
             <h4 className="font-bold text-slate-700 text-sm">Kesehatan Inventaris</h4>
           </div>
           <div className="mt-2">
-            <span className="text-3xl font-black text-slate-900">92%</span>
-            <p className="text-xs text-emerald-600 font-bold mt-1">↑ +5% membaik dari bulan lalu</p>
+            <span className="text-3xl font-black text-slate-900">{summary.health_score}%</span>
+            <p className="text-xs text-emerald-600 font-bold mt-1">Stok saat ini di atas ambang batas</p>
           </div>
         </div>
 
@@ -63,8 +106,8 @@ export const AiInsightsView: React.FC = () => {
             <h4 className="font-bold text-slate-700 text-sm">Wawasan Klasifikasi</h4>
           </div>
           <div className="mt-2">
-            <span className="text-3xl font-black text-slate-900">14<span className="text-sm font-normal text-slate-500"> Item Class A</span></span>
-            <p className="text-xs text-slate-500 mt-1">Menyumbang 75% nilai total aset</p>
+            <span className="text-3xl font-black text-slate-900">{summary.class_a_count}<span className="text-sm font-normal text-slate-500"> Item Class A</span></span>
+            <p className="text-xs text-slate-500 mt-1">Item paling berharga di gudang</p>
           </div>
         </div>
 
@@ -76,7 +119,7 @@ export const AiInsightsView: React.FC = () => {
             <h4 className="font-bold text-slate-700 text-sm">Risiko Ketersediaan</h4>
           </div>
           <div className="mt-2">
-            <span className="text-3xl font-black text-slate-900">3<span className="text-sm font-normal text-slate-500"> SKU Kritis</span></span>
+            <span className="text-3xl font-black text-slate-900">{summary.critical_sku_count}<span className="text-sm font-normal text-slate-500"> SKU Kritis</span></span>
             <p className="text-xs text-red-500 font-bold mt-1">Berada di bawah batas aman!</p>
           </div>
         </div>
@@ -89,8 +132,8 @@ export const AiInsightsView: React.FC = () => {
             <h4 className="font-bold text-slate-700 text-sm">Peluang Optimalisasi</h4>
           </div>
           <div className="mt-2">
-            <span className="text-3xl font-black text-slate-900">Rp 45Jt</span>
-            <p className="text-xs text-amber-600 font-bold mt-1">Potensi hemat dari *dead-stock*</p>
+            <span className="text-3xl font-black text-slate-900">Rp {(summary.optimization_value / 1000000).toLocaleString('id-ID', {maximumFractionDigits: 1})} Jt</span>
+            <p className="text-xs text-amber-600 font-bold mt-1">Potensi hemat dari *over-stock*</p>
           </div>
         </div>
       </div>

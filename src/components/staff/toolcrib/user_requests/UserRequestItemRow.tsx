@@ -8,6 +8,7 @@ interface UserRequestItemRowProps {
   onApprove: () => void;
   onReject: () => void;
   isParentPending: boolean;
+  disabled?: boolean;
 }
 
 export const UserRequestItemRow: React.FC<UserRequestItemRowProps> = ({ 
@@ -15,7 +16,8 @@ export const UserRequestItemRow: React.FC<UserRequestItemRowProps> = ({
   toolDetails, 
   onApprove, 
   onReject,
-  isParentPending
+  isParentPending,
+  disabled = false,
 }) => {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 space-x-0 sm:space-x-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden group">
@@ -67,7 +69,7 @@ export const UserRequestItemRow: React.FC<UserRequestItemRowProps> = ({
               onClick={onApprove}
               className="px-6 py-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-lg font-semibold rounded-lg border border-emerald-200 transition-colors"
             >
-              ACC
+              {disabled ? 'Memproses...' : 'Approve'}
             </button>
             <button
               onClick={onReject}
