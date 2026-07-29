@@ -32,6 +32,15 @@ export const DynamicMinMaxTab = () => {
     return <span className="bg-emerald-50 text-emerald-700 px-2 py-1 rounded-md text-xs font-bold">OPTIMAL</span>;
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+        <Loader2 className="w-10 h-10 animate-spin mb-4 text-indigo-500" />
+        <p className="font-semibold text-slate-600">AI sedang memproses batas Minimum & Maximum stok...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
@@ -39,7 +48,10 @@ export const DynamicMinMaxTab = () => {
           <h3 className="font-bold text-slate-800 text-lg">Dynamic Min-Max Engine</h3>
           <p className="text-xs text-slate-500 mt-1">Rekomendasi batas Min (Reorder Point) dan Max yang menyesuaikan pola pergerakan barang.</p>
         </div>
-        <button className="flex items-center space-x-2 bg-slate-900 text-white hover:bg-slate-800 px-4 py-2 rounded-xl text-sm font-bold transition-all">
+        <button 
+          onClick={loadData}
+          className="flex items-center space-x-2 bg-slate-900 text-white hover:bg-slate-800 px-4 py-2 rounded-xl text-sm font-bold transition-all"
+        >
           <RefreshCcw className="w-4 h-4" />
           <span>Hitung Ulang AI</span>
         </button>

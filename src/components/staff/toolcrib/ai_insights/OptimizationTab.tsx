@@ -1,12 +1,50 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Filter, TrendingUp, AlertTriangle, ArrowDownCircle, CheckCircle2, Zap } from 'lucide-react';
-import { INITIAL_TOOLS } from '@/src/lib/mock';
+import React, { useState, useEffect } from 'react';
+import { Filter, TrendingUp, CheckCircle2, Zap, Loader2 } from 'lucide-react';
+import { fetchInventoryOptimization } from '@/src/lib/api-ai';
+
+interface OptimizationItem {
+  SKU_ID: string;
+  Description: string;
+  Current_Stock: number;
+  Optimal_Max: number;
+  Optimal_Min: number;
+  Status: string;
+  Action: string;
+  Impact_Value: number;
+  Recommendation: string;
+}
 
 export const OptimizationTab = () => {
   const [filterAction, setFilterAction] = useState('ALL');
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [optimizations, setOptimizations] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setIsLoading(true);
+        const res = await fetchInventoryOptimization();
+        if (res.status === 'success') {
+          const mappedData = res.data.map((item: any) => {
+            let impact = 0;
+            let rec = '';
+            
+            if (item.Action === 'OVERSTOCK') {
+              impact = item.Excess_Value || 0;
+              rec = `Kembalikan/Jual kelebihan stok sebanyak ${item.Excess_Qty} unit ke vendor.`;
+            } else if (item.Action === 'UNDERSTOCK') {
+              impact = item.Shortage_Value || 0;
+              rec = `Segera pesan ${item.Shortage_Qty} unit untuk menghindari risiko downtime mesin.`;
+            } else if (item.Action === 'SLOW_MOVING') {
+              impact = item.Current_Stock * item.Unit_Price;
+              rec = `Pertimbangkan untuk menghapus dari katalog dan konfirmasi dengan departemen terkait.`;
+            } else {
+              impact = 0;
+              rec = 'Stok berada pada level optimal.';
+            }
 
   const [optimizations, setOptimizations] = useState([
     {
@@ -43,9 +81,17 @@ export const OptimizationTab = () => {
     setTimeout(() => setToastMsg(null), 4000);
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+        <Loader2 className="w-10 h-10 animate-spin mb-4 text-indigo-500" />
+        <p className="font-semibold text-slate-600">AI sedang mencari peluang optimasi stok...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
-      {/* Notifikasi */}
       {toastMsg && (
         <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3 rounded-xl flex items-center space-x-2 text-sm font-bold shadow-sm animate-in fade-in slide-in-from-top-2">
           <CheckCircle2 className="w-5 h-5 text-emerald-500" />
@@ -88,14 +134,15 @@ export const OptimizationTab = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {filteredOpts.map((item, idx) => (
+            {filteredOpts.length === 0 ? (
+               <tr><td colSpan={4} className="p-8 text-center text-slate-500">Tidak ada peluang optimasi ditemukan</td></tr>
+            ) : filteredOpts.map((item, idx) => (
               <tr key={idx} className={`transition-colors ${item.isExecuted ? 'bg-slate-50 opacity-60' : 'hover:bg-slate-50'}`}>
                 <td className="p-4">
                   <div className="flex items-center space-x-3">
-                    <img src={item.img} alt={item.desc} className="w-10 h-10 rounded-lg object-cover border border-slate-200 shrink-0" />
                     <div>
                       <span className="font-bold text-slate-700 block">{item.sku}</span>
-                      <span className="text-slate-500 text-xs">{item.desc}</span>
+                      <span className="text-slate-500 text-xs truncate max-w-[200px] block">{item.desc}</span>
                     </div>
                   </div>
                 </td>

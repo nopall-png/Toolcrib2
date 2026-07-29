@@ -1,20 +1,87 @@
 'use client';
 
-import React, { useState } from 'react';
-import { LineChart as LineChartIcon, Search, Calendar, Info } from 'lucide-react';
-import { INITIAL_TOOLS } from '@/src/lib/mock';
+import React, { useState, useEffect } from 'react';
+import { LineChart as LineChartIcon, Search, Calendar, Info, Loader2 } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+import { fetchForecast, fetchTools } from '@/src/lib/api-ai';
+
+interface ForecastItem {
+  Date: string;
+  Expected_Demand: number;
+  Lower_Bound: number;
+  Upper_Bound: number;
+  Trend_Status: string;
+  Insight: string;
+}
 
 export const StockForecastTab = () => {
-  const [filterSku, setFilterSku] = useState(INITIAL_TOOLS[0].code);
+  const [filterSku, setFilterSku] = useState('');
+  const [tools, setTools] = useState<any[]>([]);
+  const [forecast, setForecast] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const forecast = [
-    { date: '2026-08-01', expected: 12.5, minRange: 10.1, maxRange: 15.2, status: 'NORMAL', insight: 'Permintaan stabil sesuai rata-rata.' },
-    { date: '2026-08-02', expected: 13.1, minRange: 11.0, maxRange: 15.5, status: 'NORMAL', insight: 'Sedikit kenaikan, stok saat ini masih memadai.' },
-    { date: '2026-08-03', expected: 14.8, minRange: 12.5, maxRange: 17.2, status: 'WARNING', insight: 'Diprediksi ada jadwal servis mesin, siapkan stok ekstra.' },
-    { date: '2026-08-04', expected: 9.5, minRange: 7.1, maxRange: 11.8, status: 'LOW', insight: 'Permintaan menurun (akhir minggu/shift sepi).' },
-    { date: '2026-08-05', expected: 15.2, minRange: 13.0, maxRange: 18.1, status: 'WARNING', insight: 'Lonjakan permintaan diprediksi terjadi. Pastikan stok > 18 unit.' },
-  ];
+  // Load tools list from backend (FastAPI) for dropdown
+  useEffect(() => {
+    const loadTools = async () => {
+      const res = await fetchTools();
+      if (res.status === 'success' && res.data && res.data.length > 0) {
+        setTools(res.data);
+        setFilterSku(res.data[0].code);
+      }
+    };
+    loadTools();
+  }, []);
+
+  // Load forecast when filterSku changes
+  useEffect(() => {
+    if (!filterSku) return;
+
+    const loadForecast = async () => {
+      try {
+        setIsLoading(true);
+        setErrorMsg(null);
+        const res = await fetchForecast(filterSku, 30); // Prediksi 30 hari sesuai spek
+        if (res.status === 'success') {
+          const mappedData = res.data.map((item: ForecastItem) => ({
+            date: item.Date,
+            expected: item.Expected_Demand,
+            minRange: item.Lower_Bound,
+            maxRange: item.Upper_Bound,
+            status: item.Trend_Status,
+            insight: item.Insight
+          }));
+          setForecast(mappedData);
+        } else {
+          setErrorMsg(res.message || "Gagal memuat data prediksi.");
+        }
+      } catch (error) {
+        console.error("Gagal memuat data prediksi", error);
+        setErrorMsg("Gagal terhubung ke AI Engine. Pastikan server backend berjalan.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadForecast();
+  }, [filterSku]);
+
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white border border-slate-200 p-3 rounded-xl shadow-sm text-xs">
+          <p className="font-bold text-slate-700 mb-2">{label}</p>
+          {payload.map((entry: any, index: number) => (
+            <div key={index} className="flex items-center space-x-2 mb-1">
+              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }}></div>
+              <span className="text-slate-600">{entry.name}:</span>
+              <span className="font-bold text-slate-800">{(entry.value ?? 0).toFixed(1)} unit</span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <div className="space-y-4">
@@ -24,7 +91,7 @@ export const StockForecastTab = () => {
             <Calendar className="w-5 h-5 text-indigo-600" />
             <h3 className="font-bold text-slate-800 text-lg">Prediksi Kebutuhan Stok (AI Prophet)</h3>
           </div>
-          <p className="text-xs text-slate-500 mt-1">AI menganalisis pola historis pemakaian barang untuk memprediksi kebutuhan 5 hari ke depan.</p>
+          <p className="text-xs text-slate-500 mt-1">AI menganalisis pola historis pemakaian barang untuk memprediksi kebutuhan masa depan.</p>
         </div>
 
         <div className="flex items-center space-x-3 bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl">
@@ -34,8 +101,8 @@ export const StockForecastTab = () => {
             onChange={(e) => setFilterSku(e.target.value)}
             className="bg-transparent text-lg font-bold text-slate-700 focus:outline-none cursor-pointer"
           >
-            {INITIAL_TOOLS.map((tool) => (
-              <option key={tool.id} value={tool.code}>{tool.code} ({tool.name})</option>
+            {tools.map((tool) => (
+              <option key={tool.code} value={tool.code}>{tool.code} ({tool.name})</option>
             ))}
           </select>
         </div>

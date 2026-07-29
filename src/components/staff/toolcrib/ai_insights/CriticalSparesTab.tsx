@@ -33,9 +33,58 @@ const INITIAL_SPARES = [
 
 export const CriticalSparesTab = () => {
   const [filterClass, setFilterClass] = useState('ALL');
-  const [spares, setSpares] = useState(INITIAL_SPARES);
-  const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [expandedItem, setExpandedItem] = useState<number | null>(null);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [spares, setSpares] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setIsLoading(true);
+        const res = await fetchCriticalSpares();
+        if (res.status === 'success') {
+          // Map backend data ke format yang dibutuhkan UI
+          const mappedData = res.data.map((item: CriticalSpareItem) => {
+            let riskFactor = '';
+            if (item.Machine_Score >= 100) riskFactor += 'Dampak Mesin Sangat Tinggi. ';
+            else if (item.Machine_Score >= 50) riskFactor += 'Dampak Mesin Menengah. ';
+
+            if (item.Lead_Time_Score >= 80) riskFactor += `Lead Time Lama (${item.Lead_Time_Days} Hari). `;
+            if (item.Usage_Score >= 80) riskFactor += 'Pemakaian Sangat Tinggi. ';
+
+            if (!riskFactor) riskFactor = 'Barang Kebutuhan Umum (Mudah Didapat)';
+
+            return {
+              sku: item.SKU_ID,
+              desc: item.Description,
+              img: 'https://images.unsplash.com/photo-1586864387967-d02ef85d93e8?w=150&q=80', // Default image
+              currentStock: item.Current_Stock || 0,
+              minStock: item.Dynamic_Min_ROP || 0,
+              riskFactor: riskFactor.trim(),
+              class: item.Criticality_Class,
+              status: item.Criticality_Class === 'CRITICAL' ? 'DANGER' : 'SAFE',
+              isOrdered: false,
+              aiScores: {
+                usage: item.Usage_Score,
+                lt: item.Lead_Time_Score,
+                machine: item.Machine_Score,
+                total: item.Composite_Score
+              }
+            };
+          });
+          setSpares(mappedData);
+        }
+      } catch (error) {
+        console.error("Gagal memuat data", error);
+        setErrorMsg("Gagal terhubung ke AI Engine. Pastikan server backend berjalan.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadData();
+  }, []);
 
   const filteredSpares = spares.filter((item) => {
     if (filterClass === 'ALL') return true;
@@ -58,6 +107,15 @@ export const CriticalSparesTab = () => {
       setToastMsg(null);
     }, 4000);
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+        <Loader2 className="w-10 h-10 animate-spin mb-4 text-indigo-500" />
+        <p className="font-semibold text-slate-600">AI sedang menganalisis risiko *downtime*...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -101,20 +159,23 @@ export const CriticalSparesTab = () => {
               <th className="p-4">Barang (SKU)</th>
               <th className="p-4">Tingkat Kekritisan</th>
               <th className="p-4">Alasan AI (Faktor Risiko)</th>
-              <th className="p-4 text-center">Status Stok</th>
+              <th className="p-4">Status Stok</th>
               <th className="p-4">Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {filteredSpares.map((item, idx) => (
+            {errorMsg ? (
+              <tr><td colSpan={5} className="p-8 text-center text-red-500 font-semibold">{errorMsg}</td></tr>
+            ) : filteredSpares.length === 0 ? (
+              <tr><td colSpan={5} className="p-8 text-center text-slate-500">Tidak ada data ditemukan</td></tr>
+            ) : filteredSpares.map((item, idx) => (
               <React.Fragment key={idx}>
                 <tr className={`transition-colors ${item.isOrdered ? 'bg-slate-50' : 'hover:bg-slate-50'}`}>
                   <td className="p-4">
                     <div className="flex items-center space-x-3">
-                      <img src={item.img} alt={item.desc} className="w-10 h-10 rounded-lg object-cover border border-slate-200 shrink-0" />
                       <div>
                         <span className="font-bold text-slate-700 block">{item.sku}</span>
-                        <span className="text-slate-500 text-xs">{item.desc}</span>
+                        <span className="text-slate-500 text-xs truncate max-w-[200px] block">{item.desc}</span>
                       </div>
                     </div>
                   </td>
@@ -133,18 +194,12 @@ export const CriticalSparesTab = () => {
                   </td>
 
                   <td className="p-4">
-                    <div className="flex flex-col items-center justify-center">
-                      <div className="flex items-center space-x-1">
-                        {item.status === 'DANGER' && !item.isOrdered ? (
-                          <TrendingDown className="w-4 h-4 text-red-500" />
-                        ) : (
-                          <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                        )}
-                        <span className={`font-bold ${item.status === 'DANGER' && !item.isOrdered ? 'text-red-600' : 'text-emerald-600'}`}>
-                          {item.currentStock} Unit
-                        </span>
-                      </div>
-                      <span className="text-[10px] text-slate-400">Min: {item.minStock}</span>
+                    <div className="flex flex-col">
+                      <span className={`text-sm font-bold flex items-center space-x-1 ${item.currentStock <= item.minStock ? 'text-red-600' : 'text-emerald-600'}`}>
+                        {item.currentStock <= item.minStock ? <TrendingDown className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
+                        <span>{item.currentStock} Unit</span>
+                      </span>
+                      <span className="text-[10px] text-slate-400 mt-0.5">Min: {item.minStock}</span>
                     </div>
                   </td>
 
