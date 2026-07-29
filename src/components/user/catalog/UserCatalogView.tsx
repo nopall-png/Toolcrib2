@@ -15,11 +15,11 @@ export const UserCatalogView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('catalog');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const handleCheckout = () => {
-    const res = submitUserRequest('');
+  const handleCheckout = async () => {
+    const res = await submitUserRequest('');
     if (res.success) {
       setToastMessage(res.message || 'Request berhasil!');
-      setActiveTab('request_barang');
+      setActiveTab('history');
       setTimeout(() => setToastMessage(null), 4000);
     } else {
       alert(res.message);

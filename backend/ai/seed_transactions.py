@@ -121,7 +121,7 @@ def main():
                 'request_no': req_no,
                 'department_id': user['department_id'],
                 'requestor_id': user['id'],
-                'status': 'Sudah sampai',  # Transaksi selesai
+                'status': 'Approved',  # Transaksi selesai
                 'request_date': req_date.isoformat(),
                 'notes': f'Transaksi historis {tool_code}',
             })

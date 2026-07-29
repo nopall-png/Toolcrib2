@@ -18,6 +18,11 @@ Dokumentasi lengkap mengenai **Design System (UI/UX), Cara Kerja Sistem, dan Ars
 
 ---
 
+## ⚠️ Known Limitations (Batasan Sistem)
+- **Real-time Stock Updates**: Demi menjaga kompleksitas aplikasi pada skala skripsi (menghindari penggunaan koneksi WebSocket/Supabase Realtime yang berat), pembaruan stok dirancang menggunakan pola **Server-Authoritative Local Update**. Artinya, ketika *Staff Toolcrib* menekan tombol "Approve", stok di layar mereka akan berkurang secara instan sesuai perhitungan *database* (tanpa *refresh*). Namun, jika ada alat/tab lain yang sedang terbuka, *tab* tersebut tidak akan melihat pengurangan stok ini sampai mereka melakukan *refresh* manual (F5). Ini adalah *trade-off* arsitektur yang disengaja.
+
+---
+
 ## 📁 Struktur Folder Utama
 ```bash
 src/

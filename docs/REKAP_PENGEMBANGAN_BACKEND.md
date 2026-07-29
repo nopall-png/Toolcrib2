@@ -26,5 +26,11 @@ Menyadari bahwa pemanggilan API Python secara *real-time* sangat memberatkan *se
 - **User Portal Login (`UserLogin.tsx`)**: Merombak alur *login* yang sebelumnya memakan 2 langkah (pilih departemen -> pilih ID) menjadi 1 langkah praktis. Tampilan diubah dari *dropdown* nama menjadi kolom *input* **"Ketik ID Pegawai"** layaknya sistem input NIK standar industri.
 - **Staff Portal Login (`StaffLogin.tsx`)**: Menghapus sistem *Bypass* (login *dummy*). Kami menambahkan kolom `password_hash` ke tabel `users` di Supabase (menggunakan SQL), lalu mengatur *password* valid (seperti `admin123` untuk akun `TC-001` & `PR-001`). *State manager* (`store.tsx`) kemudian diperbarui agar memverifikasi input secara *real-time* ke *database*.
 
+## 6. Perombakan Alur Permintaan Barang (User Request Flow) - Phase 2
+Kami telah melakukan restrukturisasi besar-besaran pada alur operasional utama dari User ke Toolcrib agar memenuhi standar *Enterprise*:
+- **Pembaruan Skema State Machine (ENUM)**: Migrasi dari status *legacy* ke alur standar industri (`Pending`, `Approved`, `Issued`, `Cancelled`, `Rejected`, `Returned`).
+- **RPC Transaksional & ACID Compliant**: Pemotongan dan pengembalian stok barang tidak lagi dilakukan melalui API *Frontend* biasa, melainkan dipindahkan sepenuhnya ke sisi *Database* (PostgreSQL RPC). Ini menggunakan *Row-Level Locking* (`FOR UPDATE`) untuk mengunci baris data saat diproses, mencegah cacat ganda (*double deduction*) atau kebocoran stok saat ada permintaan paralel (*race condition*).
+- **Idempotency Guard**: Menanamkan perlindungan agar status yang sama tidak bisa diproses dua kali. Serta mengkonfigurasi `Unique Constraint` pada tabel transaksi historis (`stock_transactions`) untuk mencegah manipulasi data AI.
+- **Pemisahan Logika Stok & AI**: Transaksi `Approved` dicatat sebagai barang keluar (`OUT`), sedangkan `Cancelled` dicatat sebagai barang masuk (`IN`). Model *Machine Learning* AI Forecaster di *Backend* Python disetel khusus untuk hanya memvalidasi transaksi `OUT`, memastikan prediksi masa depan tetap murni dan tidak terdistorsi oleh pembatalan pesanan.
+
 ---
-Dengan penyelesaian seluruh tahapan di atas, purwarupa sistem *Toolcrib* ini telah naik kelas menjadi arsitektur perangkat lunak skala pabrik (*Enterprise-grade*) yang utuh dengan "otak" analitik di sisi *backend*.

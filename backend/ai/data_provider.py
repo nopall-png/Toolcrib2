@@ -96,7 +96,7 @@ def get_transactions(tool_code=None, start_date=None, end_date=None) -> pd.DataF
     while True:
         query = supabase.table("stock_transactions").select(
             "id, transaction_type, quantity, transaction_date, tools!inner(code), user_requests!inner(status)"
-        ).eq("transaction_type", "OUT").eq("user_requests.status", "Sudah sampai") # Hanya barang yang sudah keluar secara fisik
+        ).eq("transaction_type", "OUT").in_("user_requests.status", ["Approved", "Issued"]) # Barang yang disisihkan (Approved) atau sudah diambil (Issued)
         
         if tool_id:
             query = query.eq("tool_id", tool_id)

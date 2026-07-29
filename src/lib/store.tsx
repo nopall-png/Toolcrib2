@@ -56,9 +56,9 @@ interface AppContextType {
   submitUserRequest: (notes?: string) => { success: boolean; message?: string };
   submitNonStandardRequest: (details: NonNullable<UserRequest['nonStandardDetails']>, notes?: string) => { success: boolean; message?: string };
   userRequests: UserRequest[];
+  isProcessingRPC: boolean;
   updateUserRequestStatus: (reqId: string, status: UserRequest['status']) => void;
-  updateUserRequestItemStatus: (reqId: string, itemToolId: string, status: 'Accept' | 'Reject', rejectionReason?: string) => void;
-
+  updateUserRequestItemStatus: (reqId: string, itemToolId: string, status: 'Approved' | 'Rejected', rejectionReason?: string) => void;
   // Procurement Requests
   procurementRequests: ProcurementRequest[];
   createProcurementRequest: (data: {
@@ -89,6 +89,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [tools, setTools] = useState<ToolItem[]>([]);
   const [cart, setCart] = useState<UserRequestItem[]>([]);
   const [userRequests, setUserRequests] = useState<UserRequest[]>([]);
+  const [isProcessingRPC, setIsProcessingRPC] = useState<boolean>(false);
   const [procurementRequests, setProcurementRequests] = useState<ProcurementRequest[]>([]);
 
   const [procurementCart, setProcurementCart] = useState<ToolItem[]>([]);
@@ -96,14 +97,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   useEffect(() => {
     const fetchData = async () => {
-      const [deptRes, userRes, toolRes, reqRes, reqItemRes, procRes] = await Promise.all([
+      const [deptRes, userRes, toolRes, reqRes, procRes] = await Promise.all([
         supabase.from('departments').select('*'),
         supabase.from('users').select('*'),
         supabase.from('tools').select('*'),
-        supabase.from('user_requests').select('*'),
-        supabase.from('user_request_items').select('*'),
+        supabase.from('user_requests').select('*').not('request_no', 'ilike', 'REQ-SEED-%'),
         supabase.from('procurement_requests').select('*')
       ]);
+
+      let reqItemRes: any = { data: [] };
+      if (reqRes.data && reqRes.data.length > 0) {
+        const requestIds = reqRes.data.map(r => r.id);
+        reqItemRes = await supabase.from('user_request_items').select('*').in('request_id', requestIds);
+      }
 
       if (deptRes.data) {
         setDepartments(deptRes.data.map((d: any) => ({
@@ -148,7 +154,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               toolId: i.tool_id,
               toolName: toolRes.data?.find((t: any) => t.id === i.tool_id)?.name || 'Unknown',
               quantity: i.quantity,
-              status: r.status === 'Accept' || r.status === 'On going' || r.status === 'Sudah sampai' ? 'Accept' : (r.status === 'Reject' ? 'Reject' : undefined)
+              status: r.status === 'Approved' ? 'Approved' : (r.status === 'Reject' || r.status === 'Rejected' ? 'Rejected' : undefined)
             }));
             
           let isNonStandard = false;
@@ -167,6 +173,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           return {
             id: r.id,
             requestNo: r.request_no,
+            userName: userRes.data?.find((u: any) => u.id === r.requestor_id)?.name || 'Unknown',
             employeeId: userRes.data?.find((u: any) => u.id === r.requestor_id)?.employee_id || '',
             department: deptRes.data?.find((d: any) => d.id === r.department_id)?.name || '',
             items: items,
@@ -177,6 +184,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             nonStandardDetails
           };
         });
+        
+        // Sort descending (newest first) based on requestDate and ID as fallback
+        transformedRequests.sort((a, b) => {
+          const dateDiff = new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime();
+          if (dateDiff !== 0) return dateDiff;
+          // Fallback to localeCompare of ID if dates are exactly same
+          return b.id.localeCompare(a.id);
+        });
+        
         setUserRequests(transformedRequests);
       }
       
@@ -423,19 +439,56 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const req = userRequests.find(r => r.id === reqId);
     if (!req) return;
 
-    if (status === 'Sudah sampai') {
+    if (status === 'Approved') {
+      setIsProcessingRPC(true);
       // Panggil RPC Transaksional yang baru dibuat (ACID Compliant)
-      const { error: rpcError } = await supabase.rpc('approve_toolcrib_request', { req_id: reqId });
+      const { error: rpcError, data: rpcData } = await supabase.rpc('approve_toolcrib_request', { req_id: reqId });
       
       if (rpcError) {
         console.error('Failed to execute RPC approve_toolcrib_request:', rpcError);
         alert('Gagal menyetujui request: ' + rpcError.message);
+        setIsProcessingRPC(false);
         return;
+      }
+      
+      // Update local tools based on server authoritative data
+      if (Array.isArray(rpcData)) {
+        setTools((prevTools) => prevTools.map(t => {
+          const returnedItem = rpcData.find((d: any) => d.tool_id === t.id);
+          if (returnedItem) {
+            return { ...t, stock: returnedItem.new_stock };
+          }
+          return t;
+        }));
+      } else {
+        console.warn('RPC approve_toolcrib_request did not return array data or tool ID mismatched.', rpcData);
       }
       
       // Sinkronisasi data ke AI Caching secara Asynchronous (Fire and Forget)
       fetch('http://localhost:8000/api/ai/sync-cache', { method: 'POST' }).catch(e => console.error('AI Sync failed:', e));
+      setIsProcessingRPC(false);
       
+    } else if (status === 'Cancelled') {
+      setIsProcessingRPC(true);
+      const { error: rpcError, data: rpcData } = await supabase.rpc('cancel_approved_request', { req_id: reqId });
+      
+      if (rpcError) {
+        console.error('Failed to execute RPC cancel_approved_request:', rpcError);
+        alert('Gagal membatalkan request: ' + rpcError.message);
+        setIsProcessingRPC(false);
+        return;
+      }
+      
+      if (Array.isArray(rpcData)) {
+        setTools((prevTools) => prevTools.map(t => {
+          const returnedItem = rpcData.find((d: any) => d.tool_id === t.id);
+          if (returnedItem) {
+            return { ...t, stock: returnedItem.new_stock };
+          }
+          return t;
+        }));
+      }
+      setIsProcessingRPC(false);
     } else {
       // Update status biasa di Supabase (Pending -> Accept -> On going)
       const { error } = await supabase
@@ -455,9 +508,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
 
-  const updateUserRequestItemStatus = (reqId: string, itemToolId: string, status: 'Accept' | 'Reject', rejectionReason?: string) => {
-    setUserRequests((prev) =>
-      prev.map((req) => {
+  const updateUserRequestItemStatus = async (reqId: string, itemToolId: string, status: 'Approved' | 'Rejected', rejectionReason?: string) => {
+    // If rejected, delete from DB so the RPC doesn't deduct stock for it later
+    if (status === 'Rejected') {
+      await supabase.from('user_request_items').delete().eq('request_id', reqId).eq('tool_id', itemToolId);
+    }
+
+    let newReqStatus: string | null = null;
+
+    setUserRequests((prev) => {
+      const updatedPrev = prev.map((req) => {
         if (req.id === reqId) {
           const updatedItems = req.items.map(item => {
             if (item.toolId === itemToolId) {
@@ -467,24 +527,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           });
 
           // Check if all items are resolved
-          const allResolved = updatedItems.every(item => item.status === 'Accept' || item.status === 'Reject');
-          const allRejected = updatedItems.every(item => item.status === 'Reject');
-          const anyApproved = updatedItems.some(item => item.status === 'Accept');
+          const allResolved = updatedItems.length > 0 && updatedItems.every(item => item.status === 'Approved' || item.status === 'Rejected');
+          const allRejected = updatedItems.length > 0 && updatedItems.every(item => item.status === 'Rejected');
+          const anyApproved = updatedItems.some(item => item.status === 'Approved');
 
-          let newReqStatus = req.status;
+          let tempStatus = req.status;
           if (allResolved && req.status === 'Pending') {
             if (allRejected) {
-              newReqStatus = 'Reject';
+              tempStatus = 'Rejected';
             } else if (anyApproved) {
-              newReqStatus = 'Accept';
+              tempStatus = 'Approved'; // Trigger the ACID RPC
             }
+            newReqStatus = tempStatus;
           }
 
-          return { ...req, items: updatedItems, status: newReqStatus };
+          return { ...req, items: updatedItems, status: tempStatus };
         }
         return req;
-      })
-    );
+      });
+      return updatedPrev;
+    });
+
+    // After updating local state, if the overall status changed, sync it to DB
+    if (newReqStatus) {
+      await updateUserRequestStatus(reqId, newReqStatus);
+    }
   };
 
   // Master Tools & Users Operations
@@ -695,6 +762,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         submitUserRequest,
         submitNonStandardRequest,
         userRequests,
+        isProcessingRPC,
         updateUserRequestStatus,
         updateUserRequestItemStatus,
         procurementRequests,
