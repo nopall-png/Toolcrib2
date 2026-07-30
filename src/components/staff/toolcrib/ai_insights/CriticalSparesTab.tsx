@@ -1,35 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Filter, AlertOctagon, TrendingDown, CheckCircle2, ShoppingCart, BrainCircuit, Activity, Replace } from 'lucide-react';
-import { INITIAL_TOOLS } from '@/src/lib/mock';
+import React, { useState, useEffect } from 'react';
+import { Filter, AlertOctagon, TrendingDown, CheckCircle2, ShoppingCart, BrainCircuit, Activity, Replace, Loader2 } from 'lucide-react';
+import { fetchCriticalSpares } from '@/src/lib/api-ai';
 
-const INITIAL_SPARES = [
-  {
-    sku: INITIAL_TOOLS[7].code, desc: INITIAL_TOOLS[7].name, img: INITIAL_TOOLS[7].imageUrl,
-    currentStock: 2, minStock: 5,
-    riskFactor: 'Dampak Mesin Sangat Tinggi & Lead Time Lama (45 Hari)',
-    class: 'CRITICAL', status: 'DANGER', isOrdered: false,
-    aiScores: { usage: 80, lt: 45, machine: 100, total: 85.5 },
-    alternativeItem: { sku: 'TL-DIE-08-ALT', desc: 'Precision Mold Pin (Brand B)', stock: 45, match: 94 }
-  },
-  {
-    sku: INITIAL_TOOLS[5].code, desc: INITIAL_TOOLS[5].name, img: INITIAL_TOOLS[5].imageUrl,
-    currentStock: 15, minStock: 10,
-    riskFactor: 'Dampak Mesin Menengah',
-    class: 'IMPORTANT', status: 'SAFE', isOrdered: false,
-    aiScores: { usage: 95, lt: 14, machine: 50, total: 68.2 },
-    alternativeItem: null
-  },
-  {
-    sku: INITIAL_TOOLS[3].code, desc: INITIAL_TOOLS[3].name, img: INITIAL_TOOLS[3].imageUrl,
-    currentStock: 50, minStock: 20,
-    riskFactor: 'Barang Kebutuhan Umum (Mudah Didapat)',
-    class: 'STANDARD', status: 'SAFE', isOrdered: false,
-    aiScores: { usage: 100, lt: 3, machine: 20, total: 35.1 },
-    alternativeItem: null
-  },
-];
 
 export const CriticalSparesTab = () => {
   const [filterClass, setFilterClass] = useState('ALL');
@@ -46,7 +20,7 @@ export const CriticalSparesTab = () => {
         const res = await fetchCriticalSpares();
         if (res.status === 'success') {
           // Map backend data ke format yang dibutuhkan UI
-          const mappedData = res.data.map((item: CriticalSpareItem) => {
+          const mappedData = res.data.map((item: any) => {
             let riskFactor = '';
             if (item.Machine_Score >= 100) riskFactor += 'Dampak Mesin Sangat Tinggi. ';
             else if (item.Machine_Score >= 50) riskFactor += 'Dampak Mesin Menengah. ';
@@ -59,7 +33,7 @@ export const CriticalSparesTab = () => {
             return {
               sku: item.SKU_ID,
               desc: item.Description,
-              img: 'https://images.unsplash.com/photo-1586864387967-d02ef85d93e8?w=150&q=80', // Default image
+              img: item.Image_URL || 'https://images.unsplash.com/photo-1586864387967-d02ef85d93e8?w=150&q=80', // Default if no image in DB
               currentStock: item.Current_Stock || 0,
               minStock: item.Dynamic_Min_ROP || 0,
               riskFactor: riskFactor.trim(),

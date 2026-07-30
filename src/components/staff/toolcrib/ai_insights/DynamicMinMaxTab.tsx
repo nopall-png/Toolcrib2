@@ -1,23 +1,50 @@
 'use client';
 
-import React, { useState } from 'react';
-import { RefreshCcw, BrainCircuit } from 'lucide-react';
-import { INITIAL_TOOLS } from '@/src/lib/mock';
+import React, { useState, useEffect } from 'react';
+import { RefreshCcw, BrainCircuit, Loader2 } from 'lucide-react';
+import { fetchMinMax } from '@/src/lib/api-ai';
 
 export const DynamicMinMaxTab = () => {
   const [expandedItem, setExpandedItem] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [minmaxData, setMinmaxData] = useState<any[]>([]);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const minmaxData = [
-    { sku: INITIAL_TOOLS[7].code, desc: INITIAL_TOOLS[7].name, current: 2, min: 10, max: 25, alternativeItem: { sku: 'TL-DIE-08-ALT', desc: 'Precision Mold Pin (Brand B)', stock: 50 } },
-    { sku: INITIAL_TOOLS[1].code, desc: INITIAL_TOOLS[1].name, current: INITIAL_TOOLS[1].stock, min: Math.floor(INITIAL_TOOLS[1].minStock * 1.2), max: Math.floor(INITIAL_TOOLS[1].maxStock * 0.85) },
-    { sku: INITIAL_TOOLS[6].code, desc: INITIAL_TOOLS[6].name, current: INITIAL_TOOLS[6].stock, min: Math.floor(INITIAL_TOOLS[6].minStock * 1.2), max: Math.floor(INITIAL_TOOLS[6].maxStock * 0.85) },
-  ];
+  const loadData = async () => {
+    try {
+      setIsLoading(true);
+      setErrorMsg(null);
+      const res = await fetchMinMax();
+      if (res.status === 'success') {
+        const mappedData = res.data.map((item: any) => ({
+          sku: item.SKU_ID,
+          desc: item.Description,
+          current: item.Current_Stock,
+          min: item.Dynamic_Min_ROP,
+          max: item.Dynamic_Max,
+          status: item.Status,
+          // AlternativeItem bisa ditambahkan jika ada logic substitusi dari backend
+          alternativeItem: item.Status === 'UNDERSTOCK' ? null : null // Placeholder jika tidak ada
+        }));
+        setMinmaxData(mappedData);
+      }
+    } catch (err) {
+      console.error("Gagal memuat data MinMax", err);
+      setErrorMsg("Gagal terhubung ke AI Engine.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
 
   const getStatus = (current: number, min: number, max: number, idx: number, hasAlternative?: boolean) => {
     if (current < min) {
       if (hasAlternative) {
         return (
-          <button 
+          <button
             onClick={() => setExpandedItem(expandedItem === idx ? null : idx)}
             className="bg-red-50 text-red-700 border border-red-200 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors shadow-sm animate-pulse flex items-center space-x-1 mx-auto"
           >
@@ -48,7 +75,7 @@ export const DynamicMinMaxTab = () => {
           <h3 className="font-bold text-slate-800 text-lg">Dynamic Min-Max Engine</h3>
           <p className="text-xs text-slate-500 mt-1">Rekomendasi batas Min (Reorder Point) dan Max yang menyesuaikan pola pergerakan barang.</p>
         </div>
-        <button 
+        <button
           onClick={loadData}
           className="flex items-center space-x-2 bg-slate-900 text-white hover:bg-slate-800 px-4 py-2 rounded-xl text-sm font-bold transition-all"
         >
@@ -94,7 +121,7 @@ export const DynamicMinMaxTab = () => {
                           <p className="text-xs text-emerald-700 mb-3">
                             Barang ini berstatus <strong className="text-red-600">UNDERSTOCK</strong>. Namun, daripada memesan barang baru, AI mendeteksi kamu punya <strong>barang kembarannya</strong> (Duplikat Semantik) yang sedang berstatus <strong className="text-amber-600">OVERSTOCK</strong> di gudang. Kamu bisa memindahkan/menggunakan stok tersebut untuk menghemat anggaran!
                           </p>
-                          
+
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-white p-3 rounded-lg border border-emerald-100 shadow-sm gap-4">
                             <div>
                               <span className="font-bold text-slate-800 block">{item.alternativeItem.sku}</span>

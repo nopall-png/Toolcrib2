@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { UserRequest, ToolItem } from '@/src/lib/mock';
 import { useAppStore } from '@/src/lib/store';
 import { UserRequestItemRow } from './UserRequestItemRow';
+import { FileText, ChevronDown, Package, MessageSquare, Wrench, XCircle, CheckCircle2 } from 'lucide-react';
 
 interface UserRequestCardProps {
   req: UserRequest;
@@ -12,6 +13,20 @@ interface UserRequestCardProps {
 export const UserRequestCard: React.FC<UserRequestCardProps> = ({ req, tools, onOpenReject }) => {
   const { updateUserRequestStatus, updateUserRequestItemStatus, isProcessingRPC } = useAppStore();
   const [isExpanded, setIsExpanded] = useState<boolean>(true);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [showPdf, setShowPdf] = useState<boolean>(false);
+
+  React.useEffect(() => {
+    if (isExpanded && req.items.length > 0) {
+      import('@/src/lib/pdfGenerator').then(({ generateRequestPDFBlob }) => {
+        const url = generateRequestPDFBlob(req.items, tools, req.userName, req.requestNo);
+        setPdfUrl(url);
+      });
+    }
+    return () => {
+      if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+    };
+  }, [isExpanded, req, tools]);
 
   // If Non-Standard, the whole request is treated as one item
   const handleApproveNonStandard = () => {
@@ -152,6 +167,44 @@ export const UserRequestCard: React.FC<UserRequestCardProps> = ({ req, tools, on
                   />
                 );
               })
+            )}
+          </div>
+        )}
+
+        {/* PDF Preview */}
+        {!req.isNonStandard && pdfUrl && (
+          <div className="mt-6 border border-slate-200 rounded-xl overflow-hidden shadow-sm flex flex-col">
+            <div 
+              className="bg-slate-50 hover:bg-slate-100 cursor-pointer border-b border-slate-200 p-4 px-5 flex items-center justify-between transition-colors"
+              onClick={() => setShowPdf(!showPdf)}
+            >
+              <div className="flex items-center gap-3">
+                <div className="bg-indigo-100 p-2 rounded-lg text-indigo-600">
+                  <FileText className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-slate-800">Formulir Pesanan (PDF)</h4>
+                  <p className="text-xs text-slate-500 font-medium">Klik untuk {showPdf ? 'menyembunyikan' : 'melihat'} dokumen request barang</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-4">
+                <a 
+                  href={pdfUrl} 
+                  download={`Request_${req.requestNo}.pdf`} 
+                  onClick={(e) => e.stopPropagation()} 
+                  className="text-sm font-bold text-indigo-600 hover:text-white hover:bg-indigo-600 bg-white px-4 py-2 rounded-lg border border-indigo-200 transition-all shadow-sm"
+                >
+                  Download
+                </a>
+                <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform duration-300 ${showPdf ? 'rotate-180' : ''}`} />
+              </div>
+            </div>
+            
+            {showPdf && (
+              <div className="h-[500px] border-t border-slate-200">
+                <iframe src={pdfUrl} className="w-full h-full bg-white" title="PDF Preview" />
+              </div>
             )}
           </div>
         )}

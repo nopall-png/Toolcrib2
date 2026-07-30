@@ -10,7 +10,7 @@ import { UserRequestBarangTab } from '../request_barang/UserRequestBarangTab';
 import { UserHistoryTab } from '../history/UserHistoryTab';
 
 export const UserCatalogView: React.FC = () => {
-  const { cart, addToCart, updateCartQuantity, submitUserRequest, tools } = useAppStore();
+  const { cart, addToCart, updateCartQuantity, submitUserRequest, tools, session } = useAppStore();
 
   const [activeTab, setActiveTab] = useState<ActiveTab>('catalog');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -25,6 +25,20 @@ export const UserCatalogView: React.FC = () => {
       alert(res.message);
     }
   };
+
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (cart.length > 0 && session.userName) {
+      import('@/src/lib/pdfGenerator').then(({ generateRequestPDFBlob }) => {
+        const url = generateRequestPDFBlob(cart, tools, session.userName!);
+        setPdfUrl(url);
+      });
+    }
+    return () => {
+      if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+    };
+  }, [cart, tools, session.userName]);
 
   return (
     <div className="flex min-h-screen bg-slate-50 text-slate-900">
@@ -58,7 +72,7 @@ export const UserCatalogView: React.FC = () => {
 
       {/* Right Sidebar Cart (Receipt) */}
       {cart.length > 0 && (
-        <div className="w-[400px] bg-white border-l border-slate-200 flex flex-col shadow-xl shrink-0 sticky top-0 h-screen">
+        <div className="w-[450px] bg-white border-l border-slate-200 flex flex-col shadow-xl shrink-0 sticky top-0 h-screen">
           <div className="p-6 border-b border-slate-200 flex items-center space-x-4 bg-slate-50/50">
             <div className="p-3 bg-red-100 text-red-600 rounded-lg">
               <ShoppingCart className="w-6 h-6" />
@@ -66,7 +80,7 @@ export const UserCatalogView: React.FC = () => {
             <h2 className="font-bold text-slate-900 text-2xl">Receipt Request</h2>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-6 space-y-5 bg-slate-50/30">
+          <div className="flex-1 overflow-y-auto p-6 space-y-5 bg-slate-50/30 flex flex-col">
             {cart.map((item) => {
               const maxStock = tools.find((t) => t.id === item.toolId)?.stock || 0;
 
@@ -113,6 +127,14 @@ export const UserCatalogView: React.FC = () => {
                 </div>
               );
             })}
+            
+            {/* PDF Preview area */}
+            {pdfUrl && (
+              <div className="mt-4 border-t border-slate-200 pt-4 flex-1 flex flex-col min-h-[400px]">
+                <h4 className="font-semibold text-slate-700 mb-2">Form Request (PDF Preview)</h4>
+                <iframe src={pdfUrl} className="w-full flex-1 border border-slate-300 rounded-xl bg-slate-100" title="PDF Preview" />
+              </div>
+            )}
           </div>
 
           <div className="p-6 border-t border-slate-200 bg-white">

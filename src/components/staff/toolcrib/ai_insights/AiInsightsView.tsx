@@ -35,34 +35,17 @@ export const AiInsightsView: React.FC = () => {
   useEffect(() => {
     const loadSummary = async () => {
       try {
-        const { data, error } = await supabase.from('tools').select('stock, ai_min_stock, ai_max_stock, abc_class');
-        if (error) throw error;
-        if (data) {
-          let critical = 0;
-          let classA = 0;
-          let excessValue = 0; // Simplified for UI speed, actual value from optimization engine
-          
-          data.forEach((t: any) => {
-            if (t.stock <= (t.ai_min_stock || 1)) critical++;
-            if (t.abc_class === 'A') classA++;
-            // Estimation of excess value assuming 500k avg price if unit_price isn't pulled
-            if (t.stock > (t.ai_max_stock || 2)) {
-               excessValue += (t.stock - (t.ai_max_stock || 2)) * 100000;
-            }
-          });
-          
-          const total = data.length || 1;
-          const health = Math.floor(((total - critical) / total) * 100);
-          
-          setSummary({
-            health_score: health,
-            class_a_count: classA,
-            critical_sku_count: critical,
-            optimization_value: excessValue
-          });
-        }
+        const res = await fetch('http://localhost:8000/api/ai/dashboard-summary');
+        if (!res.ok) throw new Error("Gagal mengambil summary dari AI Engine");
+        const data = await res.json();
+        setSummary({
+          health_score: data.health_score || 0,
+          class_a_count: data.class_a_count || 0,
+          critical_sku_count: data.critical_sku_count || 0,
+          optimization_value: data.optimization_value || 0
+        });
       } catch (err) {
-        console.error("Failed to fetch dashboard summary from Supabase:", err);
+        console.error("Failed to fetch dashboard summary from Python API:", err);
       }
     };
     loadSummary();

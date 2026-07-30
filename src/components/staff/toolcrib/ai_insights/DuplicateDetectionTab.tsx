@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Filter, Info, AlertTriangle, BrainCircuit, CheckCircle2, CheckCircle, Search } from 'lucide-react';
-import { INITIAL_TOOLS } from '@/src/lib/mock';
+import { Filter, Info, AlertTriangle, BrainCircuit, CheckCircle2, CheckCircle, Search, Loader2 } from 'lucide-react';
+
 
 type DuplicateStatus = 'PENDING' | 'MERGED';
 

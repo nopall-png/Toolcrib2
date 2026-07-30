@@ -31,7 +31,7 @@ export const OptimizationTab = () => {
           const mappedData = res.data.map((item: any) => {
             let impact = 0;
             let rec = '';
-            
+
             if (item.Action === 'OVERSTOCK') {
               impact = item.Excess_Value || 0;
               rec = `Kembalikan/Jual kelebihan stok sebanyak ${item.Excess_Qty} unit ke vendor.`;
@@ -46,26 +46,26 @@ export const OptimizationTab = () => {
               rec = 'Stok berada pada level optimal.';
             }
 
-  const [optimizations, setOptimizations] = useState([
-    {
-      sku: INITIAL_TOOLS[4].code, desc: INITIAL_TOOLS[4].name, img: INITIAL_TOOLS[4].imageUrl,
-      action: 'OVERSTOCK', impactVal: 15 * (INITIAL_TOOLS[4].unitPrice || 50000),
-      recommendation: 'Kembalikan 15 unit ke Supplier atau gunakan untuk proyek internal lain.',
-      isExecuted: false
-    },
-    {
-      sku: INITIAL_TOOLS[2].code, desc: INITIAL_TOOLS[2].name, img: INITIAL_TOOLS[2].imageUrl,
-      action: 'UNDERSTOCK', impactVal: 5 * (INITIAL_TOOLS[2].unitPrice || 750000),
-      recommendation: 'Segera pesan 5 unit untuk mencegah potensi berhentinya proyek.',
-      isExecuted: false
-    },
-    {
-      sku: INITIAL_TOOLS[6].code, desc: INITIAL_TOOLS[6].name, img: INITIAL_TOOLS[6].imageUrl,
-      action: 'SLOW_MOVING', impactVal: 2 * (INITIAL_TOOLS[6].unitPrice || 45000),
-      recommendation: 'Barang tidak bergerak selama > 6 bulan. Lakukan audit fisik dan pertimbangkan penghapusan katalog.',
-      isExecuted: false
-    },
-  ]);
+            return {
+              sku: item.SKU_ID,
+              desc: item.Description,
+              img: item.Image_URL || 'https://images.unsplash.com/photo-1586864387967-d02ef85d93e8?w=150&q=80',
+              action: item.Action,
+              impactVal: impact,
+              recommendation: rec,
+              isExecuted: false
+            };
+          });
+          setOptimizations(mappedData);
+        }
+      } catch (error) {
+        console.error("Failed to load optimizations", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadData();
+  }, []);
 
   const filteredOpts = optimizations.filter((item) => {
     if (filterAction === 'ALL') return true;
@@ -135,7 +135,7 @@ export const OptimizationTab = () => {
           </thead>
           <tbody className="divide-y divide-slate-100">
             {filteredOpts.length === 0 ? (
-               <tr><td colSpan={4} className="p-8 text-center text-slate-500">Tidak ada peluang optimasi ditemukan</td></tr>
+              <tr><td colSpan={4} className="p-8 text-center text-slate-500">Tidak ada peluang optimasi ditemukan</td></tr>
             ) : filteredOpts.map((item, idx) => (
               <tr key={idx} className={`transition-colors ${item.isExecuted ? 'bg-slate-50 opacity-60' : 'hover:bg-slate-50'}`}>
                 <td className="p-4">
