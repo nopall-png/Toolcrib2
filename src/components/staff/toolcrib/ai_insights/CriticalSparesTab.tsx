@@ -1,24 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Filter, AlertOctagon, TrendingDown, CheckCircle2, ShoppingCart, BrainCircuit, Activity, Loader2 } from 'lucide-react';
+import { Filter, AlertOctagon, TrendingDown, CheckCircle2, ShoppingCart, BrainCircuit, Activity, Replace, Loader2 } from 'lucide-react';
 import { fetchCriticalSpares } from '@/src/lib/api-ai';
 
-// Interface sesuai dengan response dari backend FastAPI
-interface CriticalSpareItem {
-  SKU_ID: string;
-  Description: string;
-  Unit_Price: number;
-  Lead_Time_Days: number;
-  Total_Usage: number;
-  Usage_Score: number;
-  Lead_Time_Score: number;
-  Machine_Score: number;
-  Composite_Score: number;
-  Criticality_Class: string;
-  Current_Stock: number;
-  Dynamic_Min_ROP: number;
-}
 
 export const CriticalSparesTab = () => {
   const [filterClass, setFilterClass] = useState('ALL');
@@ -35,7 +20,7 @@ export const CriticalSparesTab = () => {
         const res = await fetchCriticalSpares();
         if (res.status === 'success') {
           // Map backend data ke format yang dibutuhkan UI
-          const mappedData = res.data.map((item: CriticalSpareItem) => {
+          const mappedData = res.data.map((item: any) => {
             let riskFactor = '';
             if (item.Machine_Score >= 100) riskFactor += 'Dampak Mesin Sangat Tinggi. ';
             else if (item.Machine_Score >= 50) riskFactor += 'Dampak Mesin Menengah. ';
@@ -48,7 +33,7 @@ export const CriticalSparesTab = () => {
             return {
               sku: item.SKU_ID,
               desc: item.Description,
-              img: 'https://images.unsplash.com/photo-1586864387967-d02ef85d93e8?w=150&q=80', // Default image
+              img: item.Image_URL || 'https://images.unsplash.com/photo-1586864387967-d02ef85d93e8?w=150&q=80', // Default if no image in DB
               currentStock: item.Current_Stock || 0,
               minStock: item.Dynamic_Min_ROP || 0,
               riskFactor: riskFactor.trim(),
@@ -84,10 +69,14 @@ export const CriticalSparesTab = () => {
     const newSpares = [...spares];
     const item = newSpares[idx];
 
+    // Ubah status menjadi sudah diorder
     item.isOrdered = true;
     setSpares(newSpares);
 
+    // Tampilkan notifikasi
     setToastMsg(`Purchase Order (PO) Darurat untuk ${item.sku} telah otomatis dikirim ke departemen Purchasing.`);
+
+    // Hilangkan notifikasi setelah 4 detik
     setTimeout(() => {
       setToastMsg(null);
     }, 4000);
@@ -104,6 +93,8 @@ export const CriticalSparesTab = () => {
 
   return (
     <div className="space-y-4">
+
+      {/* Notifikasi Sukses Pemesanan */}
       {toastMsg && (
         <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3 rounded-xl flex items-center space-x-2 text-sm font-bold shadow-sm animate-in fade-in slide-in-from-top-2">
           <CheckCircle2 className="w-5 h-5 text-emerald-500" />
@@ -120,12 +111,12 @@ export const CriticalSparesTab = () => {
           <p className="text-xs text-slate-500 mt-1">AI memprioritaskan barang yang berisiko menghentikan produksi pabrik (*downtime*) jika kehabisan stok.</p>
         </div>
 
-        <div className="flex items-center space-x-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl">
-          <Filter className="w-4 h-4 text-slate-400" />
+        <div className="flex items-center space-x-3 bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl">
+          <Filter className="w-6 h-6 text-slate-400" />
           <select
             value={filterClass}
             onChange={(e) => setFilterClass(e.target.value)}
-            className="bg-transparent text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
+            className="bg-transparent text-lg font-bold text-slate-700 focus:outline-none cursor-pointer"
           >
             <option value="ALL">Semua Tingkat Kritis</option>
             <option value="CRITICAL">🔥 CRITICAL (Kritis)</option>
@@ -135,9 +126,9 @@ export const CriticalSparesTab = () => {
         </div>
       </div>
 
-      <div className="overflow-x-auto border border-slate-200 rounded-xl">
-        <table className="w-full text-left text-sm whitespace-nowrap">
-          <thead className="bg-slate-50 text-slate-600 font-semibold text-xs border-b border-slate-200">
+      <div className="overflow-x-auto border border-slate-200 rounded-xl mt-6">
+        <table className="w-full text-left text-xl whitespace-nowrap">
+          <thead className="bg-slate-50 text-slate-600 font-semibold text-lg border-b border-slate-200">
             <tr>
               <th className="p-4">Barang (SKU)</th>
               <th className="p-4">Tingkat Kekritisan</th>
@@ -187,37 +178,43 @@ export const CriticalSparesTab = () => {
                   </td>
 
                   <td className="p-4">
-                    {item.currentStock <= item.minStock ? (
-                      item.isOrdered ? (
-                        <span className="flex items-center space-x-1 text-slate-500 font-bold text-xs bg-slate-100 px-3 py-1.5 rounded-lg w-max border border-slate-200">
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>PO Diproses</span>
-                        </span>
-                      ) : (
-                        <button
-                          onClick={() => handleEmergencyOrder(idx)}
-                          className="flex items-center space-x-1 text-xs text-white font-bold px-3 py-1.5 bg-red-600 rounded-lg hover:bg-red-700 transition-colors shadow-sm animate-pulse"
-                        >
-                          <ShoppingCart className="w-3.5 h-3.5" />
-                          <span>Order Darurat</span>
-                        </button>
-                      )
-                    ) : (
-                      <button
+                    <div className="flex items-center space-x-2">
+                      {item.status === 'DANGER' ? (
+                        item.isOrdered ? (
+                          <span className="flex items-center space-x-1 text-slate-500 font-bold text-xs bg-slate-100 px-3 py-1.5 rounded-lg w-max border border-slate-200">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>PO Diproses</span>
+                          </span>
+                        ) : (
+                          <button 
+                            onClick={() => handleEmergencyOrder(idx)}
+                            className="flex items-center space-x-1 text-xs text-white font-bold px-3 py-1.5 bg-red-600 rounded-lg hover:bg-red-700 transition-colors shadow-sm animate-pulse"
+                          >
+                            <ShoppingCart className="w-3.5 h-3.5" />
+                            <span>Order Darurat</span>
+                          </button>
+                        )
+                      ) : null}
+                      
+                      <button 
                         onClick={() => setExpandedItem(expandedItem === idx ? null : idx)}
-                        className="text-xs text-indigo-600 font-bold hover:underline px-3 py-1.5 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors"
+                        className={`text-xs font-bold hover:underline px-3 py-1.5 rounded-lg transition-colors ${
+                          item.status === 'DANGER' 
+                            ? 'text-slate-600 bg-slate-100 hover:bg-slate-200' 
+                            : 'text-indigo-600 bg-indigo-50 hover:bg-indigo-100'
+                        }`}
                       >
                         {expandedItem === idx ? 'Tutup Detail' : 'Lihat Detail'}
                       </button>
-                    )}
+                    </div>
                   </td>
                 </tr>
 
                 {/* Expanded Row Details */}
-                {expandedItem === idx && item.currentStock > item.minStock && (
+                {expandedItem === idx && (
                   <tr className="bg-slate-50/50">
                     <td colSpan={5} className="p-6 border-t border-slate-100">
-                      <div className="max-w-3xl">
+                      <div className="max-w-3xl whitespace-normal">
                         <h4 className="font-bold text-slate-800 flex items-center space-x-2 mb-4">
                           <BrainCircuit className="w-4 h-4 text-indigo-600" />
                           <span>Rincian Kalkulasi Skor AI (Mesin Suku Cadang Kritis)</span>
@@ -262,6 +259,45 @@ export const CriticalSparesTab = () => {
                             <p className={`text-[10px] mt-1 font-bold ${item.class === 'IMPORTANT' ? 'text-amber-600' : 'text-indigo-600'}`}>=&gt; Kelas: {item.class}</p>
                           </div>
                         </div>
+
+                        <p className="text-xs text-slate-500 mt-4 leading-relaxed">
+                          * <strong>Insight:</strong> Skor total AI untuk barang ini adalah {item.aiScores.total}. 
+                          {item.status === 'DANGER' ? (
+                            <span> Karena sisa stok ({item.currentStock} unit) sudah berada di bawah batas minimum keamanan ({item.minStock} unit), status barang ini dinyatakan <strong className="text-red-600">KRITIS (DANGER)</strong>. Pemesanan darurat sangat diperlukan untuk menghindari mesin produksi mati.</span>
+                          ) : (
+                            <span> Karena sisa stok ({item.currentStock} unit) masih di atas batas minimum keamanan ({item.minStock} unit), status barang ini dinyatakan <strong className="text-emerald-600">Aman (SAFE)</strong>. Tidak diperlukan tindakan pemesanan darurat saat ini.</span>
+                          )}
+                        </p>
+                        
+                        {item.alternativeItem && (
+                          <div className="mt-4 p-4 bg-emerald-50 border border-emerald-200 rounded-xl animate-in fade-in slide-in-from-bottom-2">
+                            <h5 className="font-bold text-emerald-800 flex items-center space-x-2 mb-2 text-sm">
+                              <BrainCircuit className="w-4 h-4 text-emerald-600" />
+                              <span>💡 Saran Substitusi AI (Pencegah PO Darurat)</span>
+                            </h5>
+                            <p className="text-xs text-emerald-700 mb-3">AI mendeteksi adanya barang kembar (Duplikat Semantik) dengan stok berlimpah di gudang yang bisa digunakan sementara untuk mencegah mesin mati tanpa harus membuat PO Darurat.</p>
+                            
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-white p-3 rounded-lg border border-emerald-100 shadow-sm gap-4">
+                              <div>
+                                <span className="font-bold text-slate-800 block">{item.alternativeItem.sku}</span>
+                                <span className="text-slate-500 text-xs">{item.alternativeItem.desc}</span>
+                              </div>
+                              <div className="flex items-center space-x-4">
+                                <div className="text-center">
+                                  <span className="block text-[10px] text-slate-400 uppercase font-bold">Kecocokan AI</span>
+                                  <span className="font-bold text-indigo-600 text-sm">{item.alternativeItem.match}%</span>
+                                </div>
+                                <div className="text-center">
+                                  <span className="block text-[10px] text-slate-400 uppercase font-bold">Stok Tersedia</span>
+                                  <span className="font-bold text-emerald-600 text-sm">{item.alternativeItem.stock} Unit</span>
+                                </div>
+                                <button className="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-emerald-700 transition-colors shadow-sm">
+                                  Gunakan Alternatif
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </td>
                   </tr>

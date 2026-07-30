@@ -89,10 +89,10 @@ export const UserRequestBarangTab: React.FC<UserRequestBarangTabProps> = ({
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-2xl p-6 text-white shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-2xl p-8 text-white shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-black tracking-tight">Request Barang (Non-Standard)</h2>
-          <p className="text-xs text-red-100 mt-1 max-w-xl">
+          <h2 className="text-3xl font-black tracking-tight">Request Barang (Non-Standard)</h2>
+          <p className="text-base text-red-100 mt-2 max-w-xl">
             Gunakan form ini untuk mengajukan permintaan alat/barang baru yang <strong>tidak terdapat di Master Data (Katalog)</strong>. Pengajuan ini membutuhkan persetujuan (approval) sebelum diproses ke Procurement.
           </p>
         </div>

@@ -31,28 +31,28 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ setActiveTab }) 
   return (
     <div className="space-y-6">
       {/* Welcome Hero Banner */}
-      <div className="bg-slate-900 rounded-2xl p-6 text-white shadow-sm flex items-center justify-between">
-        <div className="space-y-1">
-          <h2 className="text-xl font-bold tracking-tight">
+      <div className="bg-slate-900 rounded-3xl p-8 lg:p-10 text-white shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="space-y-3">
+          <h2 className="text-4xl font-bold tracking-tight">
             Dashboard Management Toolcrib
           </h2>
-          <p className="text-slate-400 text-xs">
-            Selamat datang, <span className="text-white font-medium">{session.userName}</span> ({session.role})
+          <p className="text-slate-400 text-base">
+            Selamat datang, <span className="text-white font-medium text-lg">{session.userName}</span> ({session.role})
           </p>
         </div>
 
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-4">
           <button
             onClick={() => setActiveTab('user_requests')}
-            className="bg-red-600 hover:bg-red-700 text-white font-semibold px-4 py-2 rounded-xl text-xs flex items-center space-x-2 shadow-xs transition-all"
+            className="bg-red-600 hover:bg-red-700 text-white font-bold px-6 py-3.5 rounded-xl text-base flex items-center space-x-2 shadow-sm transition-all"
           >
             <span>Request User ({pendingUserReq})</span>
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="w-6 h-6" />
           </button>
 
           <button
             onClick={() => setActiveTab('master_tools')}
-            className="bg-slate-800 hover:bg-slate-700 text-white font-semibold px-4 py-2 rounded-xl text-xs transition-all"
+            className="bg-slate-800 hover:bg-slate-700 text-white font-bold px-6 py-3.5 rounded-xl text-base transition-all shadow-sm"
           >
             Master Tools
           </button>
@@ -60,44 +60,44 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ setActiveTab }) 
       </div>
 
       {/* Quick Metrics Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="bg-white p-6 lg:p-8 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between transition-all hover:shadow-md">
           <div>
-            <p className="text-xs font-semibold text-slate-500">Total Master Tools</p>
-            <h3 className="text-2xl font-bold text-slate-900 mt-1">{totalTools} <span className="text-xs text-slate-400 font-normal">item</span></h3>
+            <p className="text-base font-bold text-slate-500 uppercase tracking-wider">Total Master Tools</p>
+            <h3 className="text-5xl font-black text-slate-900 mt-2">{totalTools} <span className="text-base text-slate-400 font-bold ml-1">item</span></h3>
           </div>
-          <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
-            <Package className="w-5 h-5" />
+          <div className="p-5 bg-blue-50 text-blue-600 rounded-2xl">
+            <Package className="w-10 h-10" />
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
+        <div className="bg-white p-6 lg:p-8 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between transition-all hover:shadow-md">
           <div>
-            <p className="text-xs font-semibold text-slate-500">Stok Low / Out</p>
-            <h3 className="text-2xl font-bold text-slate-900 mt-1">{lowStockCount} <span className="text-xs text-slate-400 font-normal">tool</span></h3>
+            <p className="text-base font-bold text-slate-500 uppercase tracking-wider">Stok Low / Out</p>
+            <h3 className="text-5xl font-black text-slate-900 mt-2">{lowStockCount} <span className="text-base text-slate-400 font-bold ml-1">tool</span></h3>
           </div>
-          <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
-            <AlertTriangle className="w-5 h-5" />
+          <div className="p-5 bg-amber-50 text-amber-600 rounded-2xl">
+            <AlertTriangle className="w-10 h-10" />
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
+        <div className="bg-white p-6 lg:p-8 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between transition-all hover:shadow-md">
           <div>
-            <p className="text-xs font-semibold text-slate-500">Request Pending</p>
-            <h3 className="text-2xl font-bold text-slate-900 mt-1">{pendingUserReq} <span className="text-xs text-slate-400 font-normal">pengajuan</span></h3>
+            <p className="text-base font-bold text-slate-500 uppercase tracking-wider">Request Pending</p>
+            <h3 className="text-5xl font-black text-slate-900 mt-2">{pendingUserReq} <span className="text-base text-slate-400 font-bold ml-1">pengajuan</span></h3>
           </div>
-          <div className="p-3 bg-red-50 text-red-600 rounded-xl">
-            <ClipboardList className="w-5 h-5" />
+          <div className="p-5 bg-red-50 text-red-600 rounded-2xl">
+            <ClipboardList className="w-10 h-10" />
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
+        <div className="bg-white p-6 lg:p-8 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between transition-all hover:shadow-md">
           <div>
-            <p className="text-xs font-semibold text-slate-500">Procurement Requisition</p>
-            <h3 className="text-2xl font-bold text-slate-900 mt-1">{pendingProcurement} <span className="text-xs text-slate-400 font-normal">PO</span></h3>
+            <p className="text-base font-bold text-slate-500 uppercase tracking-wider">Procurement Req</p>
+            <h3 className="text-5xl font-black text-slate-900 mt-2">{pendingProcurement} <span className="text-base text-slate-400 font-bold ml-1">PO</span></h3>
           </div>
-          <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
-            <ShoppingCart className="w-5 h-5" />
+          <div className="p-5 bg-blue-50 text-blue-600 rounded-2xl">
+            <ShoppingCart className="w-10 h-10" />
           </div>
         </div>
       </div>

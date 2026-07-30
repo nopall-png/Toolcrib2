@@ -36,33 +36,17 @@ export const AiInsightsView: React.FC = () => {
 
   const loadSummary = async () => {
     try {
-      const { data, error } = await supabase.from('tools').select('stock, ai_min_stock, ai_max_stock, abc_class');
-      if (error) throw error;
-      if (data) {
-        let critical = 0;
-        let classA = 0;
-        let excessValue = 0;
-        
-        data.forEach((t: any) => {
-          if (t.stock <= (t.ai_min_stock || 1)) critical++;
-          if (t.abc_class === 'A') classA++;
-          if (t.stock > (t.ai_max_stock || 2)) {
-             excessValue += (t.stock - (t.ai_max_stock || 2)) * 100000;
-          }
-        });
-        
-        const total = data.length || 1;
-        const health = Math.floor(((total - critical) / total) * 100);
-        
-        setSummary({
-          health_score: health,
-          class_a_count: classA,
-          critical_sku_count: critical,
-          optimization_value: excessValue
-        });
-      }
+      const res = await fetch('http://localhost:8000/api/ai/dashboard-summary');
+      if (!res.ok) throw new Error("Gagal mengambil summary dari AI Engine");
+      const data = await res.json();
+      setSummary({
+        health_score: data.health_score || 0,
+        class_a_count: data.class_a_count || 0,
+        critical_sku_count: data.critical_sku_count || 0,
+        optimization_value: data.optimization_value || 0
+      });
     } catch (err) {
-      console.error("Failed to fetch dashboard summary from Supabase:", err);
+      console.error("Failed to fetch dashboard summary from Python API:", err);
     }
   };
 
@@ -89,7 +73,7 @@ export const AiInsightsView: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-white p-10 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div>
           <div className="flex items-center space-x-2">
             <BrainCircuit className="w-6 h-6 text-indigo-600" />
@@ -165,7 +149,7 @@ export const AiInsightsView: React.FC = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex space-x-2 bg-white p-1 rounded-xl border border-slate-200 overflow-x-auto">
+      <div className="flex space-x-2 bg-white p-3 rounded-xl border border-slate-200 overflow-x-auto">
         <TabButton
           active={activeTab === 'duplicates'}
           onClick={() => setActiveTab('duplicates')}
@@ -181,25 +165,25 @@ export const AiInsightsView: React.FC = () => {
         <TabButton
           active={activeTab === 'minmax'}
           onClick={() => setActiveTab('minmax')}
-          icon={<Scale className="w-4 h-4" />}
+          icon={<Scale className="w-6 h-6" />}
           label="Dynamic Min-Max"
         />
         <TabButton
           active={activeTab === 'critical'}
           onClick={() => setActiveTab('critical')}
-          icon={<AlertTriangle className="w-4 h-4" />}
+          icon={<AlertTriangle className="w-6 h-6" />}
           label="Critical Spares"
         />
         <TabButton
           active={activeTab === 'forecast'}
           onClick={() => setActiveTab('forecast')}
-          icon={<LineChart className="w-4 h-4" />}
+          icon={<LineChart className="w-6 h-6" />}
           label="Stock Forecast"
         />
         <TabButton
           active={activeTab === 'optimization'}
           onClick={() => setActiveTab('optimization')}
-          icon={<TrendingDown className="w-4 h-4" />}
+          icon={<TrendingDown className="w-6 h-6" />}
           label="Optimizations"
         />
       </div>
@@ -220,7 +204,7 @@ export const AiInsightsView: React.FC = () => {
 const TabButton = ({ active, onClick, icon, label }: any) => (
   <button
     onClick={onClick}
-    className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${active
+    className={`flex items-center space-x-3 px-6 py-4 rounded-xl text-xl font-bold transition-all whitespace-nowrap ${active
       ? 'bg-indigo-50 text-indigo-700 shadow-sm'
       : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
       }`}

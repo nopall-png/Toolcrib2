@@ -22,13 +22,13 @@ export const UserToolListTable: React.FC<UserToolListTableProps> = ({ tools, car
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs">
+        <table className="w-full text-left text-base">
           <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider">
             <tr>
-              <th className="p-4">Kode & Tool Name</th>
-              <th className="p-4">Kategori</th>
-              <th className="p-4 text-center">Stok</th>
-              <th className="p-4 text-center">Aksi</th>
+              <th className="p-5">Kode & Tool Name</th>
+              <th className="p-5">Kategori</th>
+              <th className="p-5 text-center">Stok</th>
+              <th className="p-5 text-center">Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 font-medium">
@@ -38,47 +38,47 @@ export const UserToolListTable: React.FC<UserToolListTableProps> = ({ tools, car
 
               return (
                 <tr key={tool.id} className="hover:bg-slate-50/80 transition-colors">
-                  <td className="p-4">
-                    <div className="flex items-center space-x-3">
+                  <td className="p-5">
+                    <div className="flex items-center space-x-5">
                       <img
                         src={tool.imageUrl}
                         alt={tool.name}
-                        className="w-10 h-10 rounded-lg object-cover border border-slate-200 shrink-0"
+                        className="w-20 h-20 rounded-xl object-cover border border-slate-200 shrink-0"
                       />
                       <div>
-                        <span className="font-mono text-[10px] font-bold text-red-600 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded">
+                        <span className="font-mono text-base font-bold text-red-600 bg-red-50 border border-red-200 px-3 py-1.5 rounded">
                           {tool.code}
                         </span>
-                        <h4 className="font-bold text-slate-900 text-xs mt-0.5">{tool.name}</h4>
-                        <p className="text-[10px] text-slate-500 line-clamp-1 mt-0.5">{tool.description}</p>
+                        <h4 className="font-bold text-slate-900 text-xl mt-3">{tool.name}</h4>
+                        <p className="text-base text-slate-500 line-clamp-1 mt-1.5">{tool.description}</p>
                       </div>
                     </div>
                   </td>
 
-                  <td className="p-4">
-                    <span className="bg-slate-100 text-slate-700 px-2.5 py-1 rounded-md text-[11px] font-bold">
+                  <td className="p-5">
+                    <span className="bg-slate-100 text-slate-700 px-4 py-2 rounded-lg text-base font-bold">
                       {tool.category}
                     </span>
                   </td>
 
-                  <td className="p-4 text-center font-black text-slate-900 text-sm">
-                    {tool.stock} <span className="text-slate-400 text-xs font-normal">{tool.unit}</span>
+                  <td className="p-5 text-center font-black text-slate-900 text-3xl">
+                    {tool.stock} <span className="text-slate-400 text-base font-normal ml-1">{tool.unit}</span>
                   </td>
 
-                  <td className="p-4 text-center">
+                  <td className="p-5 text-center">
                     {isOutOfStock ? (
                       <button
                         disabled
-                        className="px-3 py-1.5 bg-slate-100 text-slate-400 text-[11px] font-bold rounded-lg cursor-not-allowed"
+                        className="px-5 py-3 bg-slate-100 text-slate-400 text-base font-bold rounded-xl cursor-not-allowed"
                       >
                         Habis
                       </button>
                     ) : (
                       <button
                         onClick={() => onRequestTool(tool)}
-                        className="px-3 py-1.5 red-gradient-btn text-white rounded-lg text-[11px] font-bold flex items-center justify-center space-x-1 shadow-sm mx-auto"
+                        className="px-5 py-3 red-gradient-btn text-white rounded-xl text-base font-bold flex items-center justify-center space-x-2 shadow-sm mx-auto"
                       >
-                        <Plus className="w-3.5 h-3.5" />
+                        <Plus className="w-6 h-6" />
                         <span>{inCartItem ? `Tambah (ada di Cart)` : 'Request'}</span>
                       </button>
                     )}
