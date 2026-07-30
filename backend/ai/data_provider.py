@@ -227,3 +227,23 @@ def get_data():
     df_machines = pd.DataFrame(columns=['Machine_ID', 'Machine_Name', 'Location', 'Downtime_Impact', 'Required_Parts'])
     
     return df_sku, df_machines, df_trx
+
+
+def update_ai_cache(payload: list) -> bool:
+    """
+    Melakukan update ke tabel tools di Supabase untuk memperbarui 
+    kolom cache AI (ai_min_stock, ai_max_stock, abc_class, xyz_class).
+    """
+    if not payload:
+        return True
+        
+    try:
+        # Use update instead of upsert to avoid NOT NULL constraint errors on other columns
+        for item in payload:
+            item_id = item.pop('id')
+            supabase.table('tools').update(item).eq('id', item_id).execute()
+        return True
+    except Exception as e:
+        print(f"Error updating AI cache: {e}")
+        return False
+

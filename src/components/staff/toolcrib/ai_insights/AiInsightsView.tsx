@@ -11,7 +11,8 @@ import {
   Layers,
   HeartPulse,
   AlertOctagon,
-  TrendingUp
+  TrendingUp,
+  RefreshCw
 } from 'lucide-react';
 import { supabase } from '@/src/lib/supabase';
 import { DuplicateDetectionTab } from './DuplicateDetectionTab';
@@ -31,42 +32,59 @@ export const AiInsightsView: React.FC = () => {
     critical_sku_count: 0,
     optimization_value: 0
   });
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const loadSummary = async () => {
+    try {
+      const { data, error } = await supabase.from('tools').select('stock, ai_min_stock, ai_max_stock, abc_class');
+      if (error) throw error;
+      if (data) {
+        let critical = 0;
+        let classA = 0;
+        let excessValue = 0;
+        
+        data.forEach((t: any) => {
+          if (t.stock <= (t.ai_min_stock || 1)) critical++;
+          if (t.abc_class === 'A') classA++;
+          if (t.stock > (t.ai_max_stock || 2)) {
+             excessValue += (t.stock - (t.ai_max_stock || 2)) * 100000;
+          }
+        });
+        
+        const total = data.length || 1;
+        const health = Math.floor(((total - critical) / total) * 100);
+        
+        setSummary({
+          health_score: health,
+          class_a_count: classA,
+          critical_sku_count: critical,
+          optimization_value: excessValue
+        });
+      }
+    } catch (err) {
+      console.error("Failed to fetch dashboard summary from Supabase:", err);
+    }
+  };
 
   useEffect(() => {
-    const loadSummary = async () => {
-      try {
-        const { data, error } = await supabase.from('tools').select('stock, ai_min_stock, ai_max_stock, abc_class');
-        if (error) throw error;
-        if (data) {
-          let critical = 0;
-          let classA = 0;
-          let excessValue = 0; // Simplified for UI speed, actual value from optimization engine
-          
-          data.forEach((t: any) => {
-            if (t.stock <= (t.ai_min_stock || 1)) critical++;
-            if (t.abc_class === 'A') classA++;
-            // Estimation of excess value assuming 500k avg price if unit_price isn't pulled
-            if (t.stock > (t.ai_max_stock || 2)) {
-               excessValue += (t.stock - (t.ai_max_stock || 2)) * 100000;
-            }
-          });
-          
-          const total = data.length || 1;
-          const health = Math.floor(((total - critical) / total) * 100);
-          
-          setSummary({
-            health_score: health,
-            class_a_count: classA,
-            critical_sku_count: critical,
-            optimization_value: excessValue
-          });
-        }
-      } catch (err) {
-        console.error("Failed to fetch dashboard summary from Supabase:", err);
-      }
-    };
     loadSummary();
   }, []);
+
+  const handleSyncCache = async () => {
+    try {
+      setIsSyncing(true);
+      const res = await fetch('http://localhost:8000/api/ai/sync-cache', { method: 'POST' });
+      if (res.ok) {
+        await loadSummary();
+      } else {
+        console.error('Failed to sync cache:', await res.text());
+      }
+    } catch (err) {
+      console.error('Error syncing cache:', err);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -81,6 +99,14 @@ export const AiInsightsView: React.FC = () => {
             Pusat kendali inventaris ditenagai AI. Pantau kesehatan stok, risiko *downtime*, dan optimalisasi anggaran.
           </p>
         </div>
+        <button
+          onClick={handleSyncCache}
+          disabled={isSyncing}
+          className="flex items-center space-x-2 px-4 py-2 bg-indigo-50 text-indigo-700 font-semibold text-sm rounded-xl hover:bg-indigo-100 transition-colors border border-indigo-200 disabled:opacity-50"
+        >
+          <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+          <span>{isSyncing ? 'Menyinkronkan...' : 'Sinkronisasi Data AI'}</span>
+        </button>
       </div>
 
       {/* MRO Dashboard KPI Cards */}
