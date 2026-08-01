@@ -44,15 +44,24 @@ src/
 Aplikasi ini menggunakan arsitektur *Hybrid* (Next.js Frontend & FastAPI Python Backend). Keduanya harus berjalan bersamaan.
 
 ### 1. Menjalankan Backend AI (Python)
-Pastikan Anda sudah menginstal Python (disarankan versi 3.9+).
-```bash
-# Masuk ke direktori backend
-cd backend/ai
+Pada **Fase 3** ini, backend AI dipecah menjadi dua layanan terpisah (Microservices) yang berjalan secara independen, serta menggunakan Model LLM Lokal via Ollama.
 
-# Opsional: Buat dan aktifkan Virtual Environment
+#### Persiapan Ollama
+Sistem menggunakan Ollama untuk menjalankan LLM (seperti Llama 3 atau Mistral) secara lokal.
+Pastikan Ollama sudah terinstal dan berjalan di sistem Anda:
+```bash
+ollama serve
+```
+
+#### A. Backend Predictive (FastAPI - Port 8000)
+Backend ini menangani logika prediksi stok (Predictive AI) dan Machine Learning.
+```bash
+# Masuk ke direktori predictive
+cd backend/predictive
+
+# Buat & aktifkan Virtual Environment (Opsional namun disarankan)
 python -m venv venv
 # Windows: venv\Scripts\activate
-# Mac/Linux: source venv/bin/activate
 
 # Install requirements
 pip install -r requirements.txt
@@ -60,7 +69,23 @@ pip install -r requirements.txt
 # Jalankan server FastAPI
 uvicorn main:app --reload --port 8000
 ```
-Backend akan berjalan di `http://localhost:8000`.
+
+#### B. Backend Generative (Flask/FastAPI - Port 5000)
+Backend ini menangani fungsi Generative AI (Chatbot Asisten, PDF Analysis, dll).
+```bash
+# Buka terminal baru, masuk ke direktori generative
+cd backend/generative
+
+# Buat & aktifkan Virtual Environment
+python -m venv venv
+# Windows: venv\Scripts\activate
+
+# Install requirements
+pip install -r requirements.txt
+
+# Jalankan server
+python app.py
+```
 
 ### 2. Menjalankan Frontend Web (Next.js)
 Buka terminal baru di direktori utama (root) proyek `Toolcrib2`.

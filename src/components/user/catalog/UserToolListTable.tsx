@@ -4,17 +4,11 @@ import React from 'react';
 import { ToolItem } from '@/src/lib/mock';
 import { Plus } from 'lucide-react';
 
-interface CartItem {
-  toolId: string;
-  toolCode: string;
-  toolName: string;
-  unit: string;
-  quantity: number;
-}
+import type { UserRequestItem } from '@/src/types';
 
 interface UserToolListTableProps {
   tools: ToolItem[];
-  cart: CartItem[];
+  cart: UserRequestItem[];
   onRequestTool: (tool: ToolItem) => void;
 }
 

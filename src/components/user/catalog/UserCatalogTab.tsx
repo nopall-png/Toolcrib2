@@ -7,16 +7,10 @@ import { useToolFilter } from '@/src/hooks/useToolFilter';
 import { UserToolListTable } from './UserToolListTable';
 import { RequestQuantityModal } from './RequestQuantityModal';
 
-interface CartItem {
-  toolId: string;
-  toolCode: string;
-  toolName: string;
-  unit: string;
-  quantity: number;
-}
+import type { UserRequestItem } from '@/src/types';
 
 interface UserCatalogTabProps {
-  cart: CartItem[];
+  cart: UserRequestItem[];
   addToCart: (tool: ToolItem, qty: number) => void;
 }
 

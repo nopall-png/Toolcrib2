@@ -1,15 +1,29 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppStore } from '@/src/lib/store';
 import { ShoppingCart, Plus, Minus, Send, X } from 'lucide-react';
 
 export const ProcurementCartSidebar: React.FC = () => {
-  const { procurementCart, procurementCartQtys, updateProcurementCartQty, clearProcurementCart, createProcurementRequest } = useAppStore();
+  const { procurementCart, procurementCartQtys, updateProcurementCartQty, clearProcurementCart, createProcurementRequest, session } = useAppStore();
 
   const calculatedCartCost = procurementCart.reduce((total, tool) => {
     return total + ((tool.unitPrice || 50000) * (procurementCartQtys[tool.id] || 1));
   }, 0);
+
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (procurementCart.length > 0 && session?.userName) {
+      import('@/src/lib/pdfGenerator').then(({ generateProcurementRequisitionPDFBlob }) => {
+        const url = generateProcurementRequisitionPDFBlob(procurementCart, procurementCartQtys, session.userName!);
+        setPdfUrl(url);
+      });
+    }
+    return () => {
+      if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+    };
+  }, [procurementCart, procurementCartQtys, session?.userName]);
 
   const handleCartSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,6 +95,14 @@ export const ProcurementCartSidebar: React.FC = () => {
               </div>
             </div>
           ))}
+
+          {/* PDF Preview area */}
+          {pdfUrl && (
+            <div className="mt-4 border-t border-slate-200 pt-4 flex flex-col min-h-[350px]">
+              <h4 className="font-semibold text-slate-700 mb-2 text-sm">Procurement Requisition (PDF Preview)</h4>
+              <iframe src={pdfUrl} className="w-full flex-1 border border-slate-300 rounded-xl bg-slate-100 min-h-[300px]" title="PDF Preview" />
+            </div>
+          )}
         </div>
 
         <div className="p-6 border-t border-slate-200 bg-white shrink-0">

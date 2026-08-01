@@ -26,7 +26,7 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ setActiveTab }) 
   const totalTools = tools.length;
   const lowStockCount = tools.filter((t) => t.status === 'Low Stock' || t.status === 'Out of Stock').length;
   const pendingUserReq = userRequests.filter((r) => r.status === 'Pending').length;
-  const pendingProcurement = procurementRequests.filter((p) => p.status === 'Pending Approval').length;
+  const pendingProcurement = procurementRequests.filter((p) => p.status === 'Pending').length;
 
   return (
     <div className="space-y-6">

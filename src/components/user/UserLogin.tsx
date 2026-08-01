@@ -22,7 +22,7 @@ export const UserLogin: React.FC = () => {
   // Step 2 State
   const [inputEmployeeId, setInputEmployeeId] = useState('EMP-001'); // Default for dev mode
 
-  const handleCombinedSubmit = (e: React.FormEvent) => {
+  const handleCombinedSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
 
@@ -39,14 +39,18 @@ export const UserLogin: React.FC = () => {
       return;
     }
 
-    const res = loginUserStep1(selectedDeptId, password);
+    const res = await loginUserStep1(selectedDeptId, password);
     if (!res.success) {
       setErrorMsg(res.message || 'Login gagal (Cek password departemen)');
       return;
     }
 
     // Jika step 1 sukses dan user cocok, langsung jalankan step 2
-    loginUserStep2(matchedUser.id);
+    const res2 = await loginUserStep2(matchedUser.id, password);
+    if (!res2?.success) {
+      setErrorMsg(res2?.message || 'Gagal login ke server auth.');
+      return;
+    }
   };
 
   return (

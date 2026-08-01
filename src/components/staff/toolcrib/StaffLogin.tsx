@@ -11,10 +11,10 @@ export const StaffLogin: React.FC = () => {
   const [password, setPassword] = useState('admin123');
   const [errorMsg, setErrorMsg] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
-    const res = loginStaff(activeTab, username, password);
+    const res = await loginStaff(activeTab, username, password);
     if (!res?.success) {
       setErrorMsg(res?.message || 'Login gagal.');
     }

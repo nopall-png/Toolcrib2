@@ -36,15 +36,24 @@ app.add_middleware(
 async def startup_event():
     import asyncio
     async def periodic_sync():
+        # Berikan jeda 5 detik agar server FastAPI selesai booting sepenuhnya
+        await asyncio.sleep(5)
         while True:
-            await asyncio.sleep(86400)
             try:
-                print("[PREDICTIVE AI] Background Auto-Syncing AI Cache...")
-                import requests
-                requests.post('http://127.0.0.1:8000/api/ai/sync-cache', timeout=60)
+                print("[PREDICTIVE AI] Background Auto-Syncing AI Cache & NLP...")
+                # Jalankan fungsi secara asinkron di thread terpisah agar tidak memblokir event loop (mencegah deadlock)
+                await asyncio.to_thread(sync_ai_cache)
+                
+                # Pre-warm model Duplicate Detector NLP
+                df_sku, _, _ = get_data()
+                await asyncio.to_thread(detector.detect_duplicate_sku, df_sku, 0.60)
+                
                 print("[PREDICTIVE AI] Auto-Sync Complete.")
             except Exception as e:
-                print(f"[PREDICTIVE AI] Auto-Sync Failed: {e}")
+                import traceback
+                print(f"[PREDICTIVE AI] Auto-Sync Failed: {e}\n{traceback.format_exc()}")
+            # Setelah sync pertama sukses, baru tunggu 24 jam untuk sync berikutnya
+            await asyncio.sleep(86400)
                 
     asyncio.create_task(periodic_sync())
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Filter, Info, AlertTriangle, BrainCircuit, CheckCircle2, CheckCircle, Search, Loader2 } from 'lucide-react';
 
 
@@ -21,6 +21,41 @@ export const DuplicateDetectionTab = () => {
   const [duplicates, setDuplicates] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchDuplicates = async () => {
+      try {
+        const response = await fetch('http://127.0.0.1:8000/api/ai/duplicates');
+        if (!response.ok) throw new Error('Failed to fetch duplicates');
+        const result = await response.json();
+        
+        if (isMounted && result.status === 'success') {
+          // Transform API response to match UI state
+          const formatted = result.data.map((item: any) => ({
+            sku1: item.SKU_1,
+            desc1: item.Desc_1,
+            sku2: item.SKU_2,
+            desc2: item.Desc_2,
+            score: item.Similarity_Score,
+            status: 'PENDING'
+          }));
+          
+          setDuplicates(formatted);
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error('Error fetching duplicates:', error);
+        if (isMounted) setIsLoading(false);
+      }
+    };
+
+    fetchDuplicates();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const filteredDuplicates = duplicates.filter((item) => {
     const matchesScore = item.score >= filterThreshold;

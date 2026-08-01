@@ -48,3 +48,8 @@ venv/
 env/
 .venv/
 .pytest_cache/
+
+# Test / Scratch files
+test_*.py
+scratch_*.py
+*.ipynb
