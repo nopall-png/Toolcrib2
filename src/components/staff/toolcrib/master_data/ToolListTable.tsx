@@ -62,11 +62,11 @@ export const ToolListTable: React.FC<ToolListTableProps> = ({ tools, onSelectToo
                 </td>
 
                 <td className="p-5 text-center font-bold text-red-600 text-2xl bg-indigo-50/20">
-                  {Math.max(1, Math.floor(tool.minStock * 1.2))} <span className="text-slate-400 text-base font-normal ml-1">{tool.unit}</span>
+                  {tool.minStock} <span className="text-slate-400 text-base font-normal ml-1">{tool.unit}</span>
                 </td>
 
                 <td className="p-5 text-center font-bold text-emerald-600 text-2xl bg-indigo-50/20">
-                  {Math.max(5, Math.floor(tool.maxStock * 0.85))} <span className="text-slate-400 text-base font-normal ml-1">{tool.unit}</span>
+                  {tool.maxStock} <span className="text-slate-400 text-base font-normal ml-1">{tool.unit}</span>
                 </td>
 
                 <td className="p-5 text-center">

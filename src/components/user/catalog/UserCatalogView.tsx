@@ -48,7 +48,7 @@ export const UserCatalogView: React.FC = () => {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Unified Header */}
-        <Header activeTab={activeTab} onOpenCart={() => {}} />
+        <Header activeTab={activeTab} onOpenCart={() => { }} />
 
         {/* Dynamic Main View Panel */}
         <main className="p-8 lg:p-12 flex-1 w-full mx-auto">
@@ -127,7 +127,7 @@ export const UserCatalogView: React.FC = () => {
                 </div>
               );
             })}
-            
+
             {/* PDF Preview area */}
             {pdfUrl && (
               <div className="mt-4 border-t border-slate-200 pt-4 flex-1 flex flex-col min-h-[400px]">

@@ -11,7 +11,8 @@ import {
   Layers,
   HeartPulse,
   AlertOctagon,
-  TrendingUp
+  TrendingUp,
+  RefreshCw
 } from 'lucide-react';
 import { supabase } from '@/src/lib/supabase';
 import { DuplicateDetectionTab } from './DuplicateDetectionTab';
@@ -31,25 +32,43 @@ export const AiInsightsView: React.FC = () => {
     critical_sku_count: 0,
     optimization_value: 0
   });
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const loadSummary = async () => {
+    try {
+      const res = await fetch('http://localhost:8000/api/ai/dashboard-summary');
+      if (!res.ok) throw new Error("Gagal mengambil summary dari AI Engine");
+      const data = await res.json();
+      setSummary({
+        health_score: data.health_score || 0,
+        class_a_count: data.class_a_count || 0,
+        critical_sku_count: data.critical_sku_count || 0,
+        optimization_value: data.optimization_value || 0
+      });
+    } catch (err) {
+      console.error("Failed to fetch dashboard summary from Python API:", err);
+    }
+  };
 
   useEffect(() => {
-    const loadSummary = async () => {
-      try {
-        const res = await fetch('http://localhost:8000/api/ai/dashboard-summary');
-        if (!res.ok) throw new Error("Gagal mengambil summary dari AI Engine");
-        const data = await res.json();
-        setSummary({
-          health_score: data.health_score || 0,
-          class_a_count: data.class_a_count || 0,
-          critical_sku_count: data.critical_sku_count || 0,
-          optimization_value: data.optimization_value || 0
-        });
-      } catch (err) {
-        console.error("Failed to fetch dashboard summary from Python API:", err);
-      }
-    };
     loadSummary();
   }, []);
+
+  const handleSyncCache = async () => {
+    try {
+      setIsSyncing(true);
+      const res = await fetch('http://localhost:8000/api/ai/sync-cache', { method: 'POST' });
+      if (res.ok) {
+        await loadSummary();
+      } else {
+        console.error('Failed to sync cache:', await res.text());
+      }
+    } catch (err) {
+      console.error('Error syncing cache:', err);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -64,6 +83,14 @@ export const AiInsightsView: React.FC = () => {
             Pusat kendali inventaris ditenagai AI. Pantau kesehatan stok, risiko *downtime*, dan optimalisasi anggaran.
           </p>
         </div>
+        <button
+          onClick={handleSyncCache}
+          disabled={isSyncing}
+          className="flex items-center space-x-2 px-4 py-2 bg-indigo-50 text-indigo-700 font-semibold text-sm rounded-xl hover:bg-indigo-100 transition-colors border border-indigo-200 disabled:opacity-50"
+        >
+          <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+          <span>{isSyncing ? 'Menyinkronkan...' : 'Sinkronisasi Data AI'}</span>
+        </button>
       </div>
 
       {/* MRO Dashboard KPI Cards */}

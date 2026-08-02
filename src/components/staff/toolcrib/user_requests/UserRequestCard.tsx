@@ -11,7 +11,7 @@ interface UserRequestCardProps {
 }
 
 export const UserRequestCard: React.FC<UserRequestCardProps> = ({ req, tools, onOpenReject }) => {
-  const { updateUserRequestStatus, updateUserRequestItemStatus, isProcessingRPC } = useAppStore();
+  const { updateUserRequestStatus, updateUserRequestItemStatus, isProcessingRPC, approveNonStandardRequest, session } = useAppStore();
   const [isExpanded, setIsExpanded] = useState<boolean>(true);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [showPdf, setShowPdf] = useState<boolean>(false);
@@ -28,9 +28,35 @@ export const UserRequestCard: React.FC<UserRequestCardProps> = ({ req, tools, on
     };
   }, [isExpanded, req, tools]);
 
+  const [isApproving, setIsApproving] = useState(false);
+
   // If Non-Standard, the whole request is treated as one item
-  const handleApproveNonStandard = () => {
-    updateUserRequestStatus(req.id, 'Approved');
+  const handleApproveNonStandard = async () => {
+    setIsApproving(true);
+    let token = session?.access_token || '';
+    
+    // Fallback: Jika user belum relogin (sehingga token di state kosong),
+    // kita tarik paksa token yang tersimpan di local Supabase client.
+    if (!token) {
+      try {
+        const { supabase } = await import('@/src/lib/supabase');
+        const { data: { session: sbSession } } = await supabase.auth.getSession();
+        if (sbSession?.access_token) {
+          token = sbSession.access_token;
+        }
+      } catch (e) {
+        console.error("Gagal mendapatkan token fallback:", e);
+      }
+    }
+    
+    if (!token) {
+      alert("Sesi Anda tidak valid. Mohon LOG OUT dan LOG IN kembali.");
+      setIsApproving(false);
+      return;
+    }
+
+    await approveNonStandardRequest(req.id, token);
+    setIsApproving(false);
   };
 
   const handleApproveItem = (toolId: string) => {
@@ -135,9 +161,10 @@ export const UserRequestCard: React.FC<UserRequestCardProps> = ({ req, tools, on
                     <div className="flex gap-3">
                       <button
                         onClick={handleApproveNonStandard}
-                        className="px-6 py-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-lg font-semibold rounded-lg border border-emerald-200"
+                        disabled={isApproving}
+                        className={`px-6 py-3 text-lg font-semibold rounded-lg border ${isApproving ? 'bg-emerald-100 text-emerald-500 border-emerald-200 cursor-not-allowed' : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200'}`}
                       >
-                        ACC Request
+                        {isApproving ? 'Loading...' : 'ACC Request'}
                       </button>
                       <button
                         onClick={() => onOpenReject(req.id)}

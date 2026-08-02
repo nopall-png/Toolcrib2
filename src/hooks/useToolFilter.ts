@@ -9,27 +9,26 @@ export function useToolFilter() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
 
-  // Role-specific categories
+  // Dynamically extract categories from the database (via tools state)
   const categories = useMemo(() => {
-    const baseCategories = [
-      'All',
-      'Power Tools',
-      'Measuring Tools',
-      'Hand Tools',
-      'Safety & PPE',
-      'Consumables',
-      'Molding & Dies',
-    ];
+    // Get unique, non-empty categories from tools
+    const uniqueCategories = new Set(
+      tools
+        .map((t) => t.category)
+        .filter((cat) => typeof cat === 'string' && cat.trim() !== '')
+    );
+    
+    // Sort them alphabetically, and always put 'All' at the front
+    const baseCategories = ['All', ...Array.from(uniqueCategories).sort()];
 
-    // Perbedaan filter berdasarkan role:
-    // Jika role staff (TOOLCRIB/PROCUREMENT), tampilkan tambahan kategori spesifik (contoh)
-    if (session.role === 'TOOLCRIB' || session.role === 'PROCUREMENT') {
+    // Jika role staff (TOOLCRIB/PROCUREMENT), tampilkan tambahan kategori 'Uncategorized'
+    // untuk keperluan filter barang yang belum dikategorikan di master data
+    if ((session.role === 'TOOLCRIB' || session.role === 'PROCUREMENT') && !baseCategories.includes('Uncategorized')) {
       return [...baseCategories, 'Uncategorized'];
     }
 
-    // Jika role USER, kembalikan base categories
     return baseCategories;
-  }, [session.role]);
+  }, [tools, session.role]);
 
   const filteredTools = useMemo(() => {
     return tools.filter((tool) => {

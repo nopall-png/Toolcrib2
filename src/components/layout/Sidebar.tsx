@@ -46,7 +46,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
 
   // Badges calculations
   const pendingUserReqCount = userRequests.filter((r) => r.status === 'Pending').length;
-  const pendingProcurementCount = procurementRequests.filter((p) => p.status === 'Pending Approval').length;
+  const pendingProcurementCount = procurementRequests.filter((p) => p.status === 'Pending').length;
   const cartTotalQty = cart.reduce((acc, curr) => acc + curr.quantity, 0);
 
   const myRequests = userRequests.filter(

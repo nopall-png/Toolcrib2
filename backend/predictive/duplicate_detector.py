@@ -11,6 +11,7 @@ class DuplicateDetector:
         self.nlp_model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
         print("[INFO] Model NLP Semantik berhasil dimuat.")
         self._cache = {}
+        self._embedding_cache = {} # Cache embeddings per description to speed up incremental updates
 
     def _get_cache_key(self, df_sku: pd.DataFrame, threshold: float) -> str:
         data = df_sku[['SKU_ID', 'Description']].sort_values('SKU_ID').to_dict(orient='records')
@@ -54,12 +55,20 @@ class DuplicateDetector:
             print("[INFO] Menggunakan hasil deteksi duplikat dari cache.")
             return self._cache[cache_key]
 
-        print("[INFO] Menghitung kesamaan semantik (tanpa cache)...")
+        print("[INFO] Menghitung kesamaan semantik (dengan incremental embedding cache)...")
         rich_descriptions = df_sku.apply(self._build_rich_description, axis=1).tolist()
         sku_ids = df_sku['SKU_ID'].tolist()
         original_descriptions = df_sku['Description'].tolist()
 
-        embeddings = self.nlp_model.encode(rich_descriptions)
+        # Incremental Encoding: Only encode descriptions we haven't seen before
+        new_descs = [desc for desc in rich_descriptions if desc not in self._embedding_cache]
+        if new_descs:
+            print(f"[INFO] Encoding {len(new_descs)} deskripsi baru...")
+            new_embeddings = self.nlp_model.encode(new_descs)
+            for desc, emb in zip(new_descs, new_embeddings):
+                self._embedding_cache[desc] = emb
+
+        embeddings = [self._embedding_cache[desc] for desc in rich_descriptions]
         similarity_matrix = cosine_similarity(embeddings)
 
         triu_indices = np.triu_indices_from(similarity_matrix, k=1)

@@ -6,6 +6,7 @@ langchain
 langchain-community
 sentence-transformers
 langchain-huggingface
+python-multipart
 pypdf
 pdfplumber
 langchain-ollama

@@ -61,14 +61,14 @@ export const ToolCatalogGrid: React.FC<ToolCatalogGridProps> = ({ tools, onSelec
               </div>
 
               <div>
-                <span className="text-sm text-indigo-500 uppercase font-bold block"> Min</span>
-                <span className="text-2xl font-bold text-red-600">{Math.max(1, Math.floor(tool.minStock * 1.2))}</span>
+                <span className="text-sm text-indigo-500 uppercase font-bold block">Min (ROP)</span>
+                <span className="text-2xl font-bold text-red-600">{tool.minStock}</span>
                 <span className="text-sm text-slate-500 block">{tool.unit}</span>
               </div>
 
               <div>
-                <span className="text-sm text-indigo-500 uppercase font-bold block"> Max</span>
-                <span className="text-2xl font-bold text-emerald-600">{Math.max(5, Math.floor(tool.maxStock * 0.85))}</span>
+                <span className="text-sm text-indigo-500 uppercase font-bold block">Max</span>
+                <span className="text-2xl font-bold text-emerald-600">{tool.maxStock}</span>
                 <span className="text-sm text-slate-500 block">{tool.unit}</span>
               </div>
             </div>

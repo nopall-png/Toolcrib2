@@ -57,8 +57,8 @@ class MinMaxOptimizer:
         date_range = df_trx.groupby('SKU_ID')['Date'].agg(lambda x: (x.max() - x.min()).days + 1)
         date_range = date_range.rename('Actual_Days').reset_index()
         df_final = pd.merge(df_final, date_range, on='SKU_ID', how='left')
-        df_final['Actual_Days'] = df_final['Actual_Days'].fillna(1)
-        df_final['Daily_Demand'] = df_final['Total_Qty_Yearly'] / df_final['Actual_Days'].clip(lower=1)
+        df_final['Actual_Days'] = df_final['Actual_Days'].fillna(90)
+        df_final['Daily_Demand'] = df_final['Total_Qty_Yearly'] / df_final['Actual_Days'].clip(lower=90)
         df_final['Dynamic_Min_ROP'] = np.ceil((df_final['Daily_Demand'] * df_final['Lead_Time_Days']) * df_final['Safety_Factor']).clip(lower=1)
         df_final['Dynamic_Max'] = (df_final['Dynamic_Min_ROP'] + np.ceil(df_final['Daily_Demand'] * 30)).clip(lower=2)
 

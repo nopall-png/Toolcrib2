@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useAppStore } from '@/src/lib/store';
-import { Search, CheckCircle2, PackageCheck } from 'lucide-react';
+import { Search, CheckCircle2, PackageCheck, FileText } from 'lucide-react';
 
 export const ProcurementApprovalPanel: React.FC = () => {
   const { procurementRequests, updateProcurementStatus } = useAppStore();
@@ -15,6 +15,17 @@ export const ProcurementApprovalPanel: React.FC = () => {
       pr.toolName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       pr.requestedBy.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleViewPDF = (pr: any) => {
+    // Filter PRs that have the same PO No and are not rejected
+    const relatedPRs = procurementRequests.filter(p => p.poNo === pr.poNo && p.status !== 'Reject');
+    import('@/src/lib/pdfGenerator').then(({ generateProcurementPDFBlob }) => {
+      const url = generateProcurementPDFBlob(relatedPRs.length > 0 ? relatedPRs : [pr]);
+      window.open(url, '_blank');
+      // Set timeout to revoke after 1 minute to avoid memory leaks
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -57,7 +68,14 @@ export const ProcurementApprovalPanel: React.FC = () => {
                   </td>
 
                   <td className="p-4">
-                    <h4 className="font-bold text-slate-900 text-xs">{pr.toolName}</h4>
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-bold text-slate-900 text-xs">{pr.toolName}</h4>
+                      {pr.isNonStandard && (
+                        <span className="px-1.5 py-0.5 text-[9px] font-bold bg-indigo-100 text-indigo-700 rounded-md uppercase border border-indigo-200 shrink-0">
+                          Non-Standard
+                        </span>
+                      )}
+                    </div>
                     <p className="text-[10px] text-slate-400">Pemohon: {pr.requestedBy}</p>
                   </td>
 
@@ -76,22 +94,22 @@ export const ProcurementApprovalPanel: React.FC = () => {
                   <td className="p-4 text-center">
                     <span
                       className={`inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                        pr.status === 'Fulfilled'
+                        pr.status === 'Sudah sampai'
                           ? 'bg-emerald-100 text-emerald-800'
-                          : pr.status === 'Ordered'
+                          : pr.status === 'On going'
                           ? 'bg-blue-100 text-blue-800'
-                          : pr.status === 'Approved'
+                          : pr.status === 'Accept'
                           ? 'bg-blue-100 text-blue-800'
-                          : pr.status === 'Pending Approval'
+                          : pr.status === 'Pending'
                           ? 'bg-amber-100 text-amber-800 animate-pulse'
                           : 'bg-red-100 text-red-800'
                       }`}
                     >
                       <span>
-                        {pr.status === 'Pending Approval' ? 'Menunggu Approval' 
-                          : pr.status === 'Approved' ? 'Diterima' 
-                          : pr.status === 'Ordered' ? 'Process' 
-                          : pr.status === 'Fulfilled' ? 'Selesai' 
+                        {pr.status === 'Pending' ? 'Menunggu Approval' 
+                          : pr.status === 'Accept' ? 'Diterima' 
+                          : pr.status === 'On going' ? 'Process' 
+                          : pr.status === 'Sudah sampai' ? 'Selesai' 
                           : 'Ditolak'}
                       </span>
                     </span>
@@ -99,16 +117,25 @@ export const ProcurementApprovalPanel: React.FC = () => {
 
                   <td className="p-4 text-right">
                     <div className="flex items-center justify-end space-x-1.5">
-                      {pr.status === 'Pending Approval' && (
+                      <button
+                        onClick={() => handleViewPDF(pr)}
+                        className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-xs shadow-xs flex items-center space-x-1 border border-slate-200"
+                        title="Lihat Form Requisition"
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                        <span>PDF</span>
+                      </button>
+
+                      {pr.status === 'Pending' && (
                         <>
                           <button
-                            onClick={() => updateProcurementStatus(pr.id, 'Approved')}
+                            onClick={() => updateProcurementStatus(pr.id, 'Accept')}
                             className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xs shadow-xs"
                           >
                             Diterima
                           </button>
                           <button
-                            onClick={() => updateProcurementStatus(pr.id, 'Rejected')}
+                            onClick={() => updateProcurementStatus(pr.id, 'Reject')}
                             className="px-2.5 py-1 bg-red-100 hover:bg-red-200 text-red-700 font-bold rounded-lg text-xs shadow-xs"
                           >
                             Ditolak
@@ -116,18 +143,18 @@ export const ProcurementApprovalPanel: React.FC = () => {
                         </>
                       )}
 
-                      {pr.status === 'Approved' && (
+                      {pr.status === 'Accept' && (
                         <button
-                          onClick={() => updateProcurementStatus(pr.id, 'Ordered')}
+                          onClick={() => updateProcurementStatus(pr.id, 'On going')}
                           className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-lg text-xs shadow-xs"
                         >
                           Process
                         </button>
                       )}
 
-                      {pr.status === 'Ordered' && (
+                      {pr.status === 'On going' && (
                         <button
-                          onClick={() => updateProcurementStatus(pr.id, 'Fulfilled')}
+                          onClick={() => updateProcurementStatus(pr.id, 'Sudah sampai')}
                           className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs flex items-center space-x-1 shadow-xs"
                         >
                           <PackageCheck className="w-3.5 h-3.5" />
@@ -135,7 +162,7 @@ export const ProcurementApprovalPanel: React.FC = () => {
                         </button>
                       )}
 
-                      {pr.status === 'Fulfilled' && (
+                      {pr.status === 'Sudah sampai' && (
                         <span className="text-[11px] text-emerald-600 font-bold flex items-center space-x-1 justify-end">
                           <CheckCircle2 className="w-3.5 h-3.5" />
                           <span>Stok Terisi</span>

@@ -48,7 +48,7 @@ export const UserRequestBarangTab: React.FC<UserRequestBarangTabProps> = ({
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleCheckout = (e: React.FormEvent) => {
+  const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!requesterName || !selectedApprover || !formData.toolName || !formData.vendorName || !formData.price || !formData.contact || !formData.dimensions || !formData.imageUrl) {
@@ -58,7 +58,7 @@ export const UserRequestBarangTab: React.FC<UserRequestBarangTabProps> = ({
 
     const approverName = INITIAL_APPROVERS.find(a => a.id === selectedApprover)?.name || selectedApprover;
 
-    const res = submitNonStandardRequest({
+    const res = await submitNonStandardRequest({
       approver: approverName,
       toolName: formData.toolName,
       vendorName: formData.vendorName,
