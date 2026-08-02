@@ -42,8 +42,8 @@ export interface RestockItemState {
 }
 
 export const createDefaultItemForm = (index: number): ItemFormState => ({
-  sku: `BRG-MEA-09${index + 1}`,
-  code: `ITM-0009${index + 1}`,
+  sku: '',
+  code: '',
   category: 'Measuring Tools',
   subcategory: 'ToolCrib',
   name: '',

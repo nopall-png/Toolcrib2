@@ -11,6 +11,7 @@
 // ============================================================
 
 import React from 'react';
+import type { ProcurementRequest } from '@/src/types';
 
 // Re-export types so existing `import { ... } from './mock'` 
 // paths can eventually be migrated to `from '@/src/types'`
@@ -253,8 +254,11 @@ export const useAppStore = () => {
   // Procurement bridges
   const createProcurementRequest = async (prData: any) => {
     const res = await procurement.createProcurementRequest(prData, auth.session, data.users);
-    if (res && res.success && res.newPr) {
-      data.setProcurementRequests(prev => [res.newPr, ...prev]);
+    if (res && res.success && res.newPrs) {
+      data.setProcurementRequests(prev => [...(res.newPrs || []), ...prev]);
+    } else if (res && res.success && res.newPr) {
+      // Fallback
+      data.setProcurementRequests(prev => [res.newPr as ProcurementRequest, ...prev]);
     }
     return res;
   };

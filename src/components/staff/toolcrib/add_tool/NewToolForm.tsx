@@ -61,12 +61,13 @@ export const NewToolForm: React.FC<NewToolFormProps> = ({ onSuccess }) => {
       }
     }
 
-    newItems.forEach((item) => {
+    newItems.forEach((item, index) => {
       const rackBinLocation = item.rack || item.bin ? `Rack ${item.rack || '-'} (${item.bin || '-'})` : 'Rack A-01';
+      const autoCode = `ITM-${Date.now().toString().slice(-4)}${index}`;
 
       addToolItem({
         sku: item.sku,
-        code: item.code || `ITM-${Date.now().toString().slice(-5)}`,
+        code: item.code || autoCode,
         name: item.name.trim(),
         category: item.category || 'Measuring Tools',
         subcategory: item.subcategory,

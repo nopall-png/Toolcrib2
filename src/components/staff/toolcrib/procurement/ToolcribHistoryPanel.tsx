@@ -3,11 +3,13 @@
 import React, { useState } from 'react';
 import { useAppStore } from '@/src/lib/store';
 import { Search, CheckCircle2, PackageCheck, Clock, XCircle, FileText, X } from 'lucide-react';
+import { ProcurementMilestone } from './ProcurementMilestone';
 
 export const ToolcribHistoryPanel: React.FC = () => {
   const { procurementRequests } = useAppStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [previewPdfUrl, setPreviewPdfUrl] = useState<string | null>(null);
+  const [expandedPo, setExpandedPo] = useState<string | null>(null);
   
   // Filter history based on search query
   const filteredPr = procurementRequests.filter(
@@ -16,6 +18,24 @@ export const ToolcribHistoryPanel: React.FC = () => {
       pr.toolName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       pr.requestedBy.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Group by PO No
+  const groupedPrs = Object.values(
+    filteredPr.reduce((acc, pr) => {
+      const basePoNo = pr.poNo.replace(/-\d+$/, ''); // Strip -1, -2 suffix
+      if (!acc[basePoNo]) {
+        acc[basePoNo] = {
+          poNo: basePoNo,
+          requestDate: pr.requestDate,
+          requestedBy: pr.requestedBy,
+          items: [],
+          status: pr.status
+        };
+      }
+      acc[basePoNo].items.push(pr);
+      return acc;
+    }, {} as Record<string, { poNo: string, requestDate: string, requestedBy: string, items: typeof procurementRequests, status: string }>)
+  ).sort((a, b) => new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime());
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -50,79 +70,134 @@ export const ToolcribHistoryPanel: React.FC = () => {
         </div>
       </div>
 
-      {/* History Table */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-base">
-            <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider">
-                <tr>
-                  <th className="p-4 text-left font-bold text-slate-500 w-1/4">NO PO & TANGGAL</th>
-                  <th className="p-4 text-left font-bold text-slate-500 w-1/3">NAMA TOOLS</th>
-                  <th className="p-4 text-center font-bold text-slate-500 w-1/6">QTY / SATUAN</th>
-                  <th className="p-4 text-center font-bold text-slate-500 w-1/6">STATUS</th>
-                  <th className="p-4 text-center font-bold text-slate-500 w-1/6">AKSI</th>
-                </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 font-medium">
-              {filteredPr.map((pr) => (
-                <tr key={pr.id} className="hover:bg-slate-50/80 transition-colors">
-                  <td className="p-6">
-                    <span className="font-mono font-bold text-blue-700 bg-blue-50 px-3 py-1 rounded-lg text-base">
-                      {pr.poNo}
-                    </span>
-                    <p className="text-sm text-slate-400 mt-2">{pr.requestDate}</p>
-                  </td>
+      {/* History Grouped Cards */}
+      <div className="space-y-4">
+        {groupedPrs.length === 0 ? (
+          <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center text-slate-500 text-base shadow-xs">
+            Belum ada riwayat pembelian barang.
+          </div>
+        ) : (
+          groupedPrs.map((group) => {
+            const isExpanded = expandedPo === group.poNo;
+            const totalItems = group.items.length;
+            const firstItemName = group.items[0].toolName;
 
-                  <td className="p-6">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-bold text-slate-900 text-lg">{pr.toolName}</h4>
-                      {pr.isNonStandard && (
-                        <span className="px-2 py-0.5 text-xs font-bold bg-indigo-100 text-indigo-700 rounded-md uppercase border border-indigo-200 shrink-0">
-                          Non-Standard
-                        </span>
-                      )}
+            return (
+              <div key={group.poNo} className="bg-white border border-slate-200 rounded-2xl shadow-xs hover:shadow-md transition-all overflow-hidden">
+                {/* Header / Minimized State */}
+                <div 
+                  className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer hover:bg-slate-50 transition-colors"
+                  onClick={() => setExpandedPo(isExpanded ? null : group.poNo)}
+                >
+                  <div className="flex items-center space-x-5 flex-1 min-w-0">
+                    <div className="w-16 h-16 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0">
+                      <FileText className="w-8 h-8 text-blue-600" />
                     </div>
-                    {pr.isNonStandard && pr.notes?.vendorName && (
-                      <p className="text-sm text-indigo-600 font-medium mt-1">Vendor: {pr.notes.vendorName}</p>
-                    )}
-                    <p className="text-sm text-slate-400 mt-1">Pemohon: {pr.requestedBy}</p>
-                  </td>
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-3">
+                        <span className="font-extrabold text-blue-700 text-xl font-mono bg-blue-50 px-3 py-1 rounded-lg">{group.poNo}</span>
+                      </div>
+                      <p className="text-lg text-slate-700 font-bold truncate mt-2">
+                        {firstItemName} {totalItems > 1 && <span className="text-slate-500 font-normal">+{totalItems - 1} item lainnya</span>}
+                      </p>
+                      <div className="text-sm text-slate-500 mt-1.5 flex items-center space-x-2">
+                        <span>Pemohon: <span className="font-bold text-slate-700">{group.requestedBy}</span></span>
+                        <span className="text-slate-300">•</span>
+                        <span className="font-mono text-slate-400">{group.requestDate}</span>
+                      </div>
+                    </div>
+                  </div>
 
-                  <td className="p-6 text-center font-bold text-slate-900 text-xl font-mono">
-                    {pr.quantity} {pr.unit}
-                  </td>
+                  <div className="flex items-center justify-between sm:justify-end space-x-4">
+                    <div className="text-right hidden sm:block mr-4">
+                      <p className="text-sm text-slate-500 mb-1">Total Biaya</p>
+                      <p className="font-bold text-slate-900 font-mono text-lg">
+                        Rp {group.items.reduce((sum, item) => sum + (item.estimatedCost || 0), 0).toLocaleString('id-ID')}
+                      </p>
+                    </div>
+                    {getStatusBadge(group.status)}
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setExpandedPo(isExpanded ? null : group.poNo);
+                      }}
+                      className="px-4 py-2 bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-slate-900 font-bold rounded-lg text-sm transition-colors border border-slate-200"
+                    >
+                      {isExpanded ? 'Tutup' : 'Inspect'}
+                    </button>
+                  </div>
+                </div>
 
-                  <td className="p-6 text-center">
-                    {getStatusBadge(pr.status)}
-                  </td>
-                  <td className="p-6 text-center">
-                    {pr.status === 'Sudah sampai' && (
+                {/* Expanded Details */}
+                {isExpanded && (
+                  <div className="px-6 pb-6 pt-4 border-t border-slate-100 bg-slate-50/50">
+                    
+                    <div className="flex justify-between items-center mb-4">
+                      <h4 className="text-sm font-bold text-slate-400 uppercase tracking-wider">Detail Barang:</h4>
+                      
                       <button
-                        onClick={async () => {
+                        onClick={async (e) => {
+                          e.stopPropagation();
                           const { generateProcurementPDFBlob } = await import('@/src/lib/pdfGenerator');
-                          const relatedPRs = procurementRequests.filter(p => p.poNo === pr.poNo && p.status !== 'Reject');
-                          const url = generateProcurementPDFBlob(relatedPRs.length > 0 ? relatedPRs : [pr]);
+                          const relatedPRs = procurementRequests.filter(p => p.poNo === group.poNo && p.status !== 'Reject');
+                          const url = generateProcurementPDFBlob(relatedPRs.length > 0 ? relatedPRs : group.items);
                           setPreviewPdfUrl(url);
                         }}
-                        className="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 font-bold rounded-lg text-sm transition-colors border border-blue-200 flex items-center space-x-1.5 mx-auto"
+                        className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 font-bold rounded-lg text-sm transition-colors shadow-sm flex items-center space-x-2"
                       >
                         <FileText className="w-4 h-4" />
-                        <span>Lihat PDF</span>
+                        <span>Lihat PDF PO</span>
                       </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-              {filteredPr.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="p-8 text-center text-slate-500 text-base">
-                    Belum ada riwayat pembelian barang.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                    </div>
+
+                    <div className="space-y-3 mb-8">
+                      {group.items.map((item, idx) => (
+                        <div key={idx} className="flex items-center space-x-4 bg-white border border-slate-200 p-4 rounded-xl shadow-xs">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-bold text-slate-800 text-lg truncate">{item.toolName}</h4>
+                              {item.isNonStandard && (
+                                <span className="px-2 py-0.5 text-xs font-bold bg-indigo-100 text-indigo-700 rounded-md uppercase border border-indigo-200 shrink-0">
+                                  Non-Standard
+                                </span>
+                              )}
+                            </div>
+                            {item.isNonStandard && item.notes?.vendorName && (
+                              <p className="text-sm text-indigo-600 font-medium mt-1">Vendor: {item.notes.vendorName}</p>
+                            )}
+                            <p className="text-sm text-slate-500 mt-1 truncate" title={item.reason}>{item.reason}</p>
+                          </div>
+                          
+                          <div className="text-right px-6 border-r border-slate-100">
+                            <p className="text-xs text-slate-400 mb-1">Subtotal</p>
+                            <p className="text-lg font-bold text-slate-700 font-mono">Rp {(item.estimatedCost || 0).toLocaleString('id-ID')}</p>
+                          </div>
+
+                          <div className="shrink-0 text-center w-24">
+                            <span className="text-base font-bold text-slate-700 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-lg font-mono block">
+                              {item.quantity} {item.unit}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Milestone Progress */}
+                    <div>
+                      <h4 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Status Progress:</h4>
+                      <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-xs">
+                        {/* Use dynamic import for Milestone or require it at top level */}
+                        <ProcurementMilestone status={group.status as any} />
+                      </div>
+                    </div>
+
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
       </div>
 
       {/* PDF Preview Modal */}
@@ -164,3 +239,4 @@ export const ToolcribHistoryPanel: React.FC = () => {
     </div>
   );
 };
+

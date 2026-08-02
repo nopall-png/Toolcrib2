@@ -50,7 +50,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       let reqItemRes: any = { data: [] };
       if (reqRes.data && reqRes.data.length > 0) {
-        const requestIds = reqRes.data.map(r => r.id);
+        const requestIds = reqRes.data.map((r: any) => r.id);
         reqItemRes = await supabase.from('user_request_items').select('*').in('request_id', requestIds);
       }
 
@@ -111,7 +111,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           };
         });
 
-        transformedRequests.sort((a, b) => {
+        transformedRequests.sort((a: any, b: any) => {
           const dateDiff = new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime();
           if (dateDiff !== 0) return dateDiff;
           return b.id.localeCompare(a.id);
@@ -185,10 +185,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .insert({
         code: newTool.code, name: newTool.name, category: newTool.category,
         stock: newTool.stock, min_stock: newTool.minStock, max_stock: newTool.maxStock,
-        unit: newTool.unit, location: newTool.location, image_url: newTool.imageUrl, description: newTool.description
+        unit: newTool.unit, location: newTool.location, image_url: newTool.imageUrl, 
+        description: newTool.description, unit_price: newTool.unitPrice || 0
       })
       .select().single();
-    if (error || !data) { console.error('Failed to add tool:', error); return; }
+    if (error || !data) { 
+      console.error('Failed to add tool, error details:', JSON.stringify(error || {})); 
+      return; 
+    }
     const status: ToolItem['status'] = newTool.status || (data.stock === 0 ? 'Out of Stock' : data.stock <= data.min_stock ? 'Low Stock' : 'Available');
     setTools((prev) => [...prev, { ...newTool, id: data.id, status }]);
   };
