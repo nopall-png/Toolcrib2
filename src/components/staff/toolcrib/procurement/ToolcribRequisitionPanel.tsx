@@ -67,16 +67,19 @@ export const ToolcribRequisitionPanel: React.FC<ToolcribRequisitionPanelProps> =
 
   const handleCartSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    procurementCart.forEach(tool => {
-      createProcurementRequest({
-        toolId: tool.id,
-        toolName: tool.name,
-        quantity: procurementCartQtys[tool.id] || 1,
-        unit: tool.unit,
-        reason: 'Restock / Kebutuhan Operasional',
-        estimatedCost: (tool.unitPrice || 50000) * (procurementCartQtys[tool.id] || 1),
-      });
-    });
+    
+    if (procurementCart.length === 0) return;
+
+    const itemsPayload = procurementCart.map(tool => ({
+      toolId: tool.id,
+      toolName: tool.name,
+      quantity: procurementCartQtys[tool.id] || 1,
+      unit: tool.unit,
+      reason: 'Restock / Kebutuhan Operasional',
+      estimatedCost: (tool.unitPrice || 50000) * (procurementCartQtys[tool.id] || 1),
+    }));
+
+    createProcurementRequest(itemsPayload);
     clearProcurementCart();
     alert('Purchase Request kolektif berhasil dikirim ke Procurement!');
   };

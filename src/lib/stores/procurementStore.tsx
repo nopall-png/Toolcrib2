@@ -12,11 +12,11 @@ export interface ProcurementContextType {
   procurementRequests: ProcurementRequest[];
   setProcurementRequests: React.Dispatch<React.SetStateAction<ProcurementRequest[]>>;
   createProcurementRequest: (
-    data: { toolId: string; toolName: string; quantity: number; unit: string; reason: string; estimatedCost: number },
+    data: any,
     session: { userName?: string; employeeId?: string },
     users: { id: string; employeeId: string }[]
-  ) => Promise<{ success: boolean; message?: string }>;
-  updateProcurementStatus: (prId: string, status: ProcurementRequest['status']) => void;
+  ) => Promise<{ success: boolean; message?: string; newPrs?: ProcurementRequest[]; newPr?: ProcurementRequest }>;
+  updateProcurementStatus: (prId: string, status: ProcurementRequest['status']) => Promise<{ success: boolean; message?: string }>;
   procurementCart: ToolItem[];
   procurementCartQtys: Record<string, number>;
   addToProcurementCart: (tool: ToolItem, qty: number) => void;
@@ -32,19 +32,20 @@ export const ProcurementProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [procurementCartQtys, setProcurementCartQtys] = useState<Record<string, number>>({});
 
   const createProcurementRequest = async (
-    data: { toolId: string; toolName: string; quantity: number; unit: string; reason: string; estimatedCost: number },
+    data: any,
     session: { userName?: string; employeeId?: string },
     users: { id: string; employeeId: string }[]
   ) => {
     try {
       const currentUser = users.find(u => u.employeeId === session.employeeId);
+      const isBatch = Array.isArray(data);
+      const itemsPayload = isBatch ? data.map((item: any) => ({ toolId: item.toolId, quantity: item.quantity })) : [{ toolId: data.toolId, quantity: data.quantity }];
 
       const res = await fetch('/api/procurement/request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          toolId: data.toolId,
-          quantity: data.quantity,
+          items: itemsPayload,
           requestedById: currentUser ? currentUser.id : null,
         }),
       });
@@ -56,15 +57,19 @@ export const ProcurementProvider: React.FC<{ children: React.ReactNode }> = ({ c
         return { success: false, message: apiData.message };
       }
 
-      const prData = apiData.data;
+      const prDataArray = Array.isArray(apiData.data) ? apiData.data : [apiData.data];
+      
+      const newPrs: ProcurementRequest[] = prDataArray.map((prData: any, index: number) => {
+        const itemData = isBatch ? data[index] : data;
+        return {
+          id: prData.id, poNo: prData.po_no, ...itemData,
+          requestedBy: session.userName || 'Toolcrib Staff',
+          status: 'Pending', requestDate: new Date(prData.request_date).toISOString().substring(0, 10),
+        };
+      });
 
-      const newPr: ProcurementRequest = {
-        id: prData.id, poNo: prData.po_no, ...data,
-        requestedBy: session.userName || 'Toolcrib Staff',
-        status: 'Pending', requestDate: new Date(prData.request_date).toISOString().substring(0, 10),
-      };
-      setProcurementRequests((prev) => [newPr, ...prev]);
-      return { success: true, newPr };
+      setProcurementRequests((prev) => [...newPrs, ...prev]);
+      return { success: true, newPrs, newPr: newPrs[0] }; // newPr kept for backward compatibility if needed
     } catch (e: any) {
       console.error('Exception in createProcurementRequest:', e);
       return { success: false, message: e.message || 'Terjadi kesalahan sistem' };

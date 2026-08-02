@@ -63,7 +63,11 @@ export const HistoryRequestItem: React.FC<HistoryRequestItemProps> = ({ request,
             <p className="text-lg text-slate-700 font-bold truncate mt-1">
               {firstItemName} {totalItems > 1 && <span className="text-slate-500 font-normal">+{totalItems - 1} item lainnya</span>}
             </p>
-            <span className="text-sm text-slate-400 font-mono mt-1.5 block">{request.requestDate}</span>
+            <div className="text-sm text-slate-500 mt-1.5 flex items-center space-x-2">
+              <span>Oleh: <span className="font-bold text-slate-700">{request.userName || 'Unknown'}</span></span>
+              <span className="text-slate-300">•</span>
+              <span className="font-mono text-slate-400">{request.requestDate}</span>
+            </div>
           </div>
         </div>
 
