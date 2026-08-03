@@ -184,11 +184,23 @@ export const useAppStore = () => {
         return;
       }
       if (Array.isArray(rpcData)) {
+        const affectedToolCodes: string[] = [];
         data.setTools((prevTools) => prevTools.map(t => {
           const returnedItem = rpcData.find((d: any) => d.tool_id === t.id);
-          if (returnedItem) return { ...t, stock: returnedItem.new_stock };
+          if (returnedItem) {
+            affectedToolCodes.push(t.code);
+            return { ...t, stock: returnedItem.new_stock };
+          }
           return t;
         }));
+        // Fire-and-forget: Sync AI Chatbot ChromaDB (stock decreased)
+        if (affectedToolCodes.length > 0) {
+          fetch('http://localhost:8001/api/sync-chroma', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tool_codes: affectedToolCodes })
+          }).catch(err => console.error('[AI Sync] Failed to sync after approve:', err));
+        }
       }
       fetch('http://localhost:8000/api/ai/sync-cache', { method: 'POST' }).catch(() => {});
     } else if (status === 'Cancelled') {
@@ -199,11 +211,23 @@ export const useAppStore = () => {
         return;
       }
       if (Array.isArray(rpcData)) {
+        const affectedToolCodes: string[] = [];
         data.setTools((prevTools) => prevTools.map(t => {
           const returnedItem = rpcData.find((d: any) => d.tool_id === t.id);
-          if (returnedItem) return { ...t, stock: returnedItem.new_stock };
+          if (returnedItem) {
+            affectedToolCodes.push(t.code);
+            return { ...t, stock: returnedItem.new_stock };
+          }
           return t;
         }));
+        // Fire-and-forget: Sync AI Chatbot ChromaDB (stock restored)
+        if (affectedToolCodes.length > 0) {
+          fetch('http://localhost:8001/api/sync-chroma', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tool_codes: affectedToolCodes })
+          }).catch(err => console.error('[AI Sync] Failed to sync after cancel:', err));
+        }
       }
     } else {
       const { error } = await supabase.from('user_requests').update({ status }).eq('id', reqId);
@@ -267,6 +291,14 @@ export const useAppStore = () => {
     const res = await procurement.updateProcurementStatus(prId, status);
     if (res && res.success) {
       data.setProcurementRequests(prev => prev.map(pr => pr.id === prId ? { ...pr, status } : pr));
+      // Fire-and-forget AI Sync as requested
+      if (status === 'Approved' || status === 'Cancelled') {
+        fetch('http://localhost:8001/api/sync-chroma', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}) // Sync all to be safe, or could filter by tool_id if available
+        }).catch(err => console.error('[AI Sync] Failed to sync after procurement status update:', err));
+      }
     }
     return res;
   };

@@ -37,6 +37,16 @@ export const ToolcribHistoryPanel: React.FC = () => {
     }, {} as Record<string, { poNo: string, requestDate: string, requestedBy: string, items: typeof procurementRequests, status: string }>)
   ).sort((a, b) => new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime());
 
+  const getGroupStatus = (items: typeof procurementRequests) => {
+    if (items.length === 0) return 'Pending';
+    if (items.every(i => i.status === 'Reject' || i.status === 'Rejected')) return 'Reject';
+    if (items.some(i => i.status === 'Pending')) return 'Pending';
+    if (items.every(i => i.status === 'Sudah sampai' || i.status === 'Reject' || i.status === 'Rejected')) return 'Sudah sampai';
+    if (items.some(i => i.status === 'On going')) return 'On going';
+    if (items.some(i => i.status === 'Accept')) return 'Accept';
+    return items[0].status;
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'Sudah sampai':
@@ -44,7 +54,7 @@ export const ToolcribHistoryPanel: React.FC = () => {
       case 'On going':
         return <span className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-sm font-bold bg-blue-100 text-blue-800"><PackageCheck className="w-4 h-4" /><span>Dalam Pengiriman</span></span>;
       case 'Accept':
-        return <span className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-sm font-bold bg-blue-100 text-blue-800"><span>Disetujui</span></span>;
+        return <span className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-sm font-bold bg-blue-100 text-blue-800"><span>Disetujui Sebagian / Penuh</span></span>;
       case 'Pending':
         return <span className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-sm font-bold bg-amber-100 text-amber-800 animate-pulse"><Clock className="w-4 h-4" /><span>Menunggu Persetujuan</span></span>;
       case 'Reject':
@@ -81,6 +91,9 @@ export const ToolcribHistoryPanel: React.FC = () => {
             const isExpanded = expandedPo === group.poNo;
             const totalItems = group.items.length;
             const firstItemName = group.items[0].toolName;
+            
+            const activeItems = group.items.filter(i => i.status !== 'Reject' && i.status !== 'Rejected');
+            const totalCost = activeItems.reduce((sum, item) => sum + (item.estimatedCost || 0), 0);
 
             return (
               <div key={group.poNo} className="bg-white border border-slate-200 rounded-2xl shadow-xs hover:shadow-md transition-all overflow-hidden">
@@ -113,10 +126,10 @@ export const ToolcribHistoryPanel: React.FC = () => {
                     <div className="text-right hidden sm:block mr-4">
                       <p className="text-sm text-slate-500 mb-1">Total Biaya</p>
                       <p className="font-bold text-slate-900 font-mono text-lg">
-                        Rp {group.items.reduce((sum, item) => sum + (item.estimatedCost || 0), 0).toLocaleString('id-ID')}
+                        Rp {totalCost.toLocaleString('id-ID')}
                       </p>
                     </div>
-                    {getStatusBadge(group.status)}
+                    {getStatusBadge(getGroupStatus(group.items))}
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
@@ -140,7 +153,7 @@ export const ToolcribHistoryPanel: React.FC = () => {
                         onClick={async (e) => {
                           e.stopPropagation();
                           const { generateProcurementPDFBlob } = await import('@/src/lib/pdfGenerator');
-                          const relatedPRs = procurementRequests.filter(p => p.poNo === group.poNo && p.status !== 'Reject');
+                          const relatedPRs = group.items.filter(p => p.status !== 'Reject' && p.status !== 'Rejected');
                           const url = generateProcurementPDFBlob(relatedPRs.length > 0 ? relatedPRs : group.items);
                           setPreviewPdfUrl(url);
                         }}
@@ -155,13 +168,16 @@ export const ToolcribHistoryPanel: React.FC = () => {
                       {group.items.map((item, idx) => (
                         <div key={idx} className="flex items-center space-x-4 bg-white border border-slate-200 p-4 rounded-xl shadow-xs">
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-3">
                               <h4 className="font-bold text-slate-800 text-lg truncate">{item.toolName}</h4>
-                              {item.isNonStandard && (
-                                <span className="px-2 py-0.5 text-xs font-bold bg-indigo-100 text-indigo-700 rounded-md uppercase border border-indigo-200 shrink-0">
-                                  Non-Standard
-                                </span>
-                              )}
+                              <div className="flex items-center gap-2 shrink-0">
+                                {item.isNonStandard && (
+                                  <span className="px-2 py-0.5 text-xs font-bold bg-indigo-100 text-indigo-700 rounded-md uppercase border border-indigo-200">
+                                    Non-Standard
+                                  </span>
+                                )}
+                              </div>
+                              {getStatusBadge(item.status)}
                             </div>
                             {item.isNonStandard && item.notes?.vendorName && (
                               <p className="text-sm text-indigo-600 font-medium mt-1">Vendor: {item.notes.vendorName}</p>
@@ -188,7 +204,7 @@ export const ToolcribHistoryPanel: React.FC = () => {
                       <h4 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Status Progress:</h4>
                       <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-xs">
                         {/* Use dynamic import for Milestone or require it at top level */}
-                        <ProcurementMilestone status={group.status as any} />
+                        <ProcurementMilestone status={getGroupStatus(group.items) as any} />
                       </div>
                     </div>
 

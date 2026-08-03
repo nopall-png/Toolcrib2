@@ -99,9 +99,10 @@ PERTANYAAN TEKNISI:
 INSTRUKSI UNTUK ANDA:
 1. Jawab pertanyaan HANYA berdasarkan konteks yang diberikan di atas.
 2. Sertakan kode SKU yang relevan pada jawaban Anda secara jelas.
-3. Bersikaplah ramah, sopan, dan interaktif menggunakan 100% BAHASA INDONESIA.
-4. Jika ada beberapa barang yang relevan, sebutkan semuanya dengan jelas beserta SKU-nya.
-5. Gunakan emoji sewajarnya agar percakapan lebih hidup dan tidak kaku.
+3. JIKA DITANYA SOAL STOK ATAU JUMLAH BARANG, ANDA WAJIB MENYEBUTKAN ANGKA STOK SAAT INI SECARA EKSPLISIT berdasarkan teks "Stok Saat Ini" di konteks.
+4. Bersikaplah ramah, sopan, dan interaktif menggunakan 100% BAHASA INDONESIA.
+5. Jika ada beberapa barang yang relevan, sebutkan semuanya dengan jelas beserta SKU-nya.
+6. Gunakan emoji sewajarnya agar percakapan lebih hidup dan tidak kaku.
 
 JAWABAN (DALAM BAHASA INDONESIA):"""
 

@@ -43,7 +43,7 @@ export const NewToolForm: React.FC<NewToolFormProps> = ({ onSuccess }) => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
 
@@ -54,58 +54,65 @@ export const NewToolForm: React.FC<NewToolFormProps> = ({ onSuccess }) => {
         setErrorMsg(`Nama Barang pada Item #${i + 1} wajib diisi!`);
         return;
       }
-      if (!item.imageUrl || !item.imageUrl.trim()) {
-        setActiveNewItemIndex(i);
-        setErrorMsg(`Gambar Item #${i + 1} WAJIB diunggah/diisi!`);
-        return;
-      }
     }
 
-    newItems.forEach((item, index) => {
-      const rackBinLocation = item.rack || item.bin ? `Rack ${item.rack || '-'} (${item.bin || '-'})` : 'Rack A-01';
-      const autoCode = `ITM-${Date.now().toString().slice(-4)}${index}`;
+    try {
+      const promises = newItems.map((item, index) => {
+        const rackBinLocation = item.rack || item.bin ? `Rack ${item.rack || '-'} (${item.bin || '-'})` : 'Rack A-01';
+        const autoCode = `ITM-${Date.now().toString().slice(-4)}${index}`;
 
-      addToolItem({
-        sku: item.sku,
-        code: item.code || autoCode,
-        name: item.name.trim(),
-        category: item.category || 'Measuring Tools',
-        subcategory: item.subcategory,
-        brand: item.brand,
-        model: item.model,
-        partNumber: item.partNumber,
-        technicalSpec: item.technicalSpec,
-        material: item.material,
-        dimension: item.dimension,
-        weight: item.weight,
-        unit: item.unit || 'PCS',
-        stock: Number(item.stock),
-        minStock: Number(item.minStock),
-        maxStock: Number(item.maxStock),
-        warehouse: item.warehouse,
-        rack: item.rack,
-        bin: item.bin,
-        location: rackBinLocation,
-        supplier: item.supplier,
-        leadTimeDays: Number(item.leadTimeDays),
-        supplierRating: Number(item.supplierRating),
-        supplierEmail: item.supplierEmail,
-        purchaseDate: item.purchaseDate,
-        unitPrice: Number(item.unitPrice),
-        totalValue: Number(item.unitPrice) * Number(item.stock),
-        department: item.department,
-        calibrationDate: item.calibrationDate,
-        expiryDate: item.expiryDate,
-        status: item.status || 'Active',
-        condition: item.condition || 'Good',
-        inspectionDate: item.inspectionDate,
-        imageUrl: item.imageUrl,
-        description: item.technicalSpec || item.name,
-        lastRestocked: new Date().toISOString().substring(0, 10),
+        return addToolItem({
+          sku: item.sku,
+          code: item.code || autoCode,
+          name: item.name.trim(),
+          category: item.category || 'Measuring Tools',
+          subcategory: item.subcategory,
+          brand: item.brand,
+          model: item.model,
+          partNumber: item.partNumber,
+          technicalSpec: item.technicalSpec,
+          material: item.material,
+          dimension: item.dimension,
+          weight: item.weight,
+          unit: item.unit || 'PCS',
+          stock: Number(item.stock),
+          minStock: Number(item.minStock),
+          maxStock: Number(item.maxStock),
+          warehouse: item.warehouse,
+          rack: item.rack,
+          bin: item.bin,
+          location: rackBinLocation,
+          supplier: item.supplier,
+          leadTimeDays: Number(item.leadTimeDays),
+          supplierRating: Number(item.supplierRating),
+          supplierEmail: item.supplierEmail,
+          purchaseDate: item.purchaseDate,
+          unitPrice: Number(item.unitPrice),
+          totalValue: Number(item.unitPrice) * Number(item.stock),
+          department: item.department,
+          calibrationDate: item.calibrationDate,
+          expiryDate: item.expiryDate,
+          status: item.status || 'Active',
+          condition: item.condition || 'Good',
+          inspectionDate: item.inspectionDate,
+          imageUrl: item.imageUrl,
+          description: item.technicalSpec || item.name,
+          lastRestocked: new Date().toISOString().substring(0, 10),
+        });
       });
-    });
 
-    onSuccess();
+      const results = await Promise.all(promises);
+      const failed = results.find(r => !r.success);
+
+      if (failed) {
+        setErrorMsg(`Gagal menyimpan ke database: ${failed.error}`);
+        return;
+      }
+
+      onSuccess();
+    } catch (err: any) {
+      setErrorMsg(`Terjadi kesalahan sistem: ${err.message}`);
+    }
   };
 
   return (

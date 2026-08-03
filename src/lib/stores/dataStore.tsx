@@ -20,7 +20,7 @@ export interface DataContextType {
   setProcurementRequests: React.Dispatch<React.SetStateAction<ProcurementRequest[]>>;
   addUser: (user: Omit<AppUser, 'id'>) => void;
   removeUser: (userId: string) => void;
-  addToolItem: (tool: Omit<ToolItem, 'id'>) => void;
+  addToolItem: (tool: Omit<ToolItem, 'id'>) => Promise<{success: boolean, error?: string}>;
   updateToolStock: (toolId: string, changeOrAbsolute: number) => void;
 }
 
@@ -65,14 +65,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           departmentId: u.department_id, role: u.role, passwordHash: u.password_hash
         })));
       }
+      let parsedTools: ToolItem[] = [];
       if (toolRes.data) {
-        setTools(toolRes.data.map((t: any) => ({
+        parsedTools = toolRes.data.map((t: any) => ({
           id: t.id, code: t.code, name: t.name, category: t.category,
           stock: t.stock, minStock: t.min_stock, maxStock: t.max_stock,
           unit: t.unit, location: t.location, imageUrl: t.image_url,
-          description: t.description, unitPrice: t.unit_price || 0,
+          description: t.description, unitPrice: Number(t.unit_price) || 0,
           status: t.stock === 0 ? 'Out of Stock' : (t.stock <= t.min_stock ? 'Low Stock' : 'Available')
-        })));
+        }));
+        setTools(parsedTools);
       }
       if (reqRes.data && reqItemRes.data && toolRes.data && userRes.data && deptRes.data) {
         const transformedRequests = reqRes.data.map((r: any) => {
@@ -80,10 +82,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             .filter((i: any) => i.request_id === r.id)
             .map((i: any) => ({
               id: i.id, toolId: i.tool_id,
-              toolCode: toolRes.data?.find((t: any) => t.id === i.tool_id)?.code || '',
-              toolName: toolRes.data?.find((t: any) => t.id === i.tool_id)?.name || 'Unknown',
+              toolCode: parsedTools.find((t: any) => t.id === i.tool_id)?.code || '',
+              toolName: parsedTools.find((t: any) => t.id === i.tool_id)?.name || 'Unknown',
               quantity: i.quantity,
-              unit: toolRes.data?.find((t: any) => t.id === i.tool_id)?.unit || 'pcs',
+              unit: parsedTools.find((t: any) => t.id === i.tool_id)?.unit || 'pcs',
               status: r.status === 'Approved' ? 'Approved' : (r.status === 'Reject' || r.status === 'Rejected' ? 'Rejected' : undefined)
             }));
 
@@ -117,14 +119,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return b.id.localeCompare(a.id);
         });
 
-        setUserRequests(transformedRequests);
+        // Hide recovered DB testing data from UI, but keep them for Predictive AI
+        const displayRequests = transformedRequests.filter((r: any) => !r.requestNo.startsWith('REQ-RECOVERED-'));
+        setUserRequests(displayRequests);
       }
 
       if (procRes && procRes.success && Array.isArray(procRes.data)) {
-        const toolsData = toolRes?.data || [];
         const usersData = userRes?.data || [];
         
-        setProcurementRequests(procRes.data.map((p: any) => {
+        let mappedProcRequests = procRes.data.map((p: any) => {
           let reqDateStr = '';
           try {
             reqDateStr = p.request_date ? new Date(p.request_date).toISOString().substring(0, 10) : '';
@@ -139,19 +142,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             id: p.id, 
             poNo: p.po_no, 
             toolId: p.tool_id || '',
-            toolName: isNonStandard ? (notes.toolName || 'Unknown') : (toolsData.find((t: any) => t.id === p.tool_id)?.name || 'Unknown'),
+            toolName: isNonStandard ? (notes.toolName || 'Unknown') : (parsedTools.find((t: ToolItem) => t.id === p.tool_id)?.name || 'Unknown'),
             quantity: p.quantity,
-            unit: isNonStandard ? 'pcs' : (toolsData.find((t: any) => t.id === p.tool_id)?.unit || 'pcs'),
+            unit: isNonStandard ? 'pcs' : (parsedTools.find((t: ToolItem) => t.id === p.tool_id)?.unit || 'pcs'),
             reason: isNonStandard ? `Vendor: ${notes.vendorName || ''} • Kontak: ${notes.contact || ''}` : '', 
             requestedBy: usersData.find((u: any) => u.id === p.requested_by_id)?.name || 'Unknown',
             status: p.status,
             requestDate: reqDateStr,
-            estimatedCost: isNonStandard ? (notes.price || 0) : 0,
+            estimatedCost: isNonStandard ? Number(notes.price || 0) : (Number(parsedTools.find((t: ToolItem) => t.id === p.tool_id)?.unitPrice || 0) * Number(p.quantity || 0)),
             isNonStandard: isNonStandard,
             notes: notes,
             sourceRequestId: p.source_request_id
           };
-        }));
+        });
+
+        setProcurementRequests(mappedProcRequests);
       } else {
         console.error('Procurement Fetch Failed or data is invalid:', procRes);
       }
@@ -179,7 +184,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // --- Tool CRUD ---
-  const addToolItem = async (newTool: Omit<ToolItem, 'id'>) => {
+  const addToolItem = async (newTool: Omit<ToolItem, 'id'>): Promise<{success: boolean, error?: string}> => {
     const { data, error } = await supabase
       .from('tools')
       .insert({
@@ -190,11 +195,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       })
       .select().single();
     if (error || !data) { 
-      console.error('Failed to add tool, error details:', JSON.stringify(error || {})); 
-      return; 
+      const errStr = JSON.stringify(error || {});
+      console.error('Failed to add tool, error details:', errStr); 
+      return { success: false, error: error?.message || 'Database insert failed' }; 
     }
     const status: ToolItem['status'] = newTool.status || (data.stock === 0 ? 'Out of Stock' : data.stock <= data.min_stock ? 'Low Stock' : 'Available');
     setTools((prev) => [...prev, { ...newTool, id: data.id, status }]);
+
+    // Fire-and-forget: Sync AI Chatbot ChromaDB with new tool
+    fetch('http://localhost:8001/api/sync-chroma', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tool_codes: [newTool.code] })
+    }).catch(err => console.error('[AI Sync] Failed to sync new tool:', err));
+
+    return { success: true };
   };
 
   const updateToolStock = async (toolId: string, changeOrAbsolute: number) => {
@@ -212,6 +227,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       return t;
     }));
+
+    // Fire-and-forget: Sync AI Chatbot ChromaDB with updated stock
+    fetch('http://localhost:8001/api/sync-chroma', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tool_codes: [tool.code] })
+    }).catch(err => console.error('[AI Sync] Failed to sync stock update:', err));
   };
 
   return (

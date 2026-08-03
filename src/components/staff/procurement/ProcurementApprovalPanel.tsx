@@ -2,12 +2,13 @@
 
 import React, { useState } from 'react';
 import { useAppStore } from '@/src/lib/store';
-import { Search, CheckCircle2, PackageCheck, FileText } from 'lucide-react';
+import { Search, CheckCircle2, PackageCheck, FileText, X } from 'lucide-react';
 
 export const ProcurementApprovalPanel: React.FC = () => {
   const { procurementRequests, updateProcurementStatus } = useAppStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedPo, setExpandedPo] = useState<string | null>(null);
+  const [previewPdfUrl, setPreviewPdfUrl] = useState<string | null>(null);
   
   // Filter history based on search query
   const filteredPr = procurementRequests.filter(
@@ -37,8 +38,20 @@ export const ProcurementApprovalPanel: React.FC = () => {
 
   const handleUpdatePOStatus = async (items: typeof procurementRequests, newStatus: any) => {
     for (const item of items) {
+      // Don't update items that are rejected or already completed, unless we are resetting them.
+      if (item.status === 'Reject' || item.status === 'Rejected') continue;
       await updateProcurementStatus(item.id, newStatus);
     }
+  };
+
+  const getGroupStatus = (items: typeof procurementRequests) => {
+    if (items.length === 0) return 'Pending';
+    if (items.every(i => i.status === 'Reject' || i.status === 'Rejected')) return 'Reject';
+    if (items.some(i => i.status === 'Pending')) return 'Pending';
+    if (items.every(i => i.status === 'Sudah sampai' || i.status === 'Reject' || i.status === 'Rejected')) return 'Sudah sampai';
+    if (items.some(i => i.status === 'On going')) return 'On going';
+    if (items.some(i => i.status === 'Accept')) return 'Accept';
+    return items[0].status;
   };
 
   const getStatusBadge = (status: string) => {
@@ -48,7 +61,7 @@ export const ProcurementApprovalPanel: React.FC = () => {
       case 'On going':
         return <span className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-800"><PackageCheck className="w-4 h-4" /><span>Dalam Proses</span></span>;
       case 'Accept':
-        return <span className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-800"><span>Disetujui</span></span>;
+        return <span className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-800"><span>Disetujui Sebagian / Penuh</span></span>;
       case 'Pending':
         return <span className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 animate-pulse"><span>Menunggu Persetujuan</span></span>;
       case 'Reject':
@@ -85,8 +98,9 @@ export const ProcurementApprovalPanel: React.FC = () => {
             const totalItems = group.items.length;
             const firstItemName = group.items[0].toolName;
             
-            // Calculate total cost for the PO
-            const totalCost = group.items.reduce((sum, item) => sum + (item.estimatedCost || 0), 0);
+            // Calculate total cost for the PO (excluding rejected items)
+            const activeItems = group.items.filter(i => i.status !== 'Reject' && i.status !== 'Rejected');
+            const totalCost = activeItems.reduce((sum, item) => sum + (item.estimatedCost || 0), 0);
 
             return (
               <div key={group.poNo} className="bg-white border border-slate-200 rounded-2xl shadow-xs hover:shadow-md transition-all overflow-hidden">
@@ -121,7 +135,7 @@ export const ProcurementApprovalPanel: React.FC = () => {
                       <p className="text-xs text-slate-500 mb-1">Total Biaya</p>
                       <p className="font-bold text-slate-900 font-mono">Rp {totalCost.toLocaleString('id-ID')}</p>
                     </div>
-                    {getStatusBadge(group.status)}
+                    {getStatusBadge(getGroupStatus(group.items))}
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
@@ -145,10 +159,9 @@ export const ProcurementApprovalPanel: React.FC = () => {
                         onClick={async (e) => {
                           e.stopPropagation();
                           const { generateProcurementPDFBlob } = await import('@/src/lib/pdfGenerator');
-                          const relatedPRs = procurementRequests.filter(p => p.poNo === group.poNo && p.status !== 'Reject');
+                          const relatedPRs = group.items.filter(p => p.status !== 'Reject' && p.status !== 'Rejected');
                           const url = generateProcurementPDFBlob(relatedPRs.length > 0 ? relatedPRs : group.items);
-                          window.open(url, '_blank');
-                          setTimeout(() => URL.revokeObjectURL(url), 60000);
+                          setPreviewPdfUrl(url);
                         }}
                         className="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 font-bold rounded-lg text-xs transition-colors shadow-xs flex items-center space-x-1.5 border border-blue-200"
                       >
@@ -182,6 +195,30 @@ export const ProcurementApprovalPanel: React.FC = () => {
                               {item.quantity} {item.unit}
                             </span>
                           </div>
+                          
+                          {/* Per-Item Actions */}
+                          <div className="flex flex-col gap-2 pl-4 border-l border-slate-100 w-32 shrink-0 justify-center">
+                            {item.status === 'Pending' ? (
+                              <>
+                                <button
+                                  onClick={() => updateProcurementStatus(item.id, 'Accept')}
+                                  className="w-full px-2 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded text-[10px] shadow-xs transition-colors"
+                                >
+                                  Terima
+                                </button>
+                                <button
+                                  onClick={() => updateProcurementStatus(item.id, 'Reject')}
+                                  className="w-full px-2 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 font-bold rounded text-[10px] shadow-xs transition-colors"
+                                >
+                                  Tolak
+                                </button>
+                              </>
+                            ) : (
+                              <div className="text-center w-full">
+                                {getStatusBadge(item.status)}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -189,28 +226,17 @@ export const ProcurementApprovalPanel: React.FC = () => {
                     {/* Actions Panel */}
                     <div className="bg-white p-4 rounded-xl border border-slate-200 flex items-center justify-between shadow-xs">
                       <div>
-                        <p className="text-xs text-slate-500 font-medium">Aksi untuk PO <span className="font-bold text-slate-800">{group.poNo}</span></p>
+                        <p className="text-xs text-slate-500 font-medium">Aksi Kolektif untuk PO <span className="font-bold text-slate-800">{group.poNo}</span></p>
                       </div>
                       
                       <div className="flex items-center space-x-2">
-                        {group.status === 'Pending' && (
-                          <>
-                            <button
-                              onClick={() => handleUpdatePOStatus(group.items, 'Accept')}
-                              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xs shadow-xs transition-colors"
-                            >
-                              Terima PO
-                            </button>
-                            <button
-                              onClick={() => handleUpdatePOStatus(group.items, 'Reject')}
-                              className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 font-bold rounded-lg text-xs shadow-xs transition-colors"
-                            >
-                              Tolak PO
-                            </button>
-                          </>
+                        {group.items.some(i => i.status === 'Pending') && (
+                          <div className="px-4 py-2 bg-amber-50 text-amber-700 font-bold rounded-lg text-xs border border-amber-200">
+                            Selesaikan Persetujuan per Barang
+                          </div>
                         )}
 
-                        {group.status === 'Accept' && (
+                        {!group.items.some(i => i.status === 'Pending') && group.items.some(i => i.status === 'Accept') && (
                           <button
                             onClick={() => handleUpdatePOStatus(group.items, 'On going')}
                             className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-lg text-xs shadow-xs transition-colors"
@@ -219,7 +245,7 @@ export const ProcurementApprovalPanel: React.FC = () => {
                           </button>
                         )}
 
-                        {group.status === 'On going' && (
+                        {!group.items.some(i => i.status === 'Pending') && group.items.some(i => i.status === 'On going') && (
                           <button
                             onClick={() => handleUpdatePOStatus(group.items, 'Sudah sampai')}
                             className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs flex items-center space-x-1.5 shadow-xs transition-colors"
@@ -229,13 +255,19 @@ export const ProcurementApprovalPanel: React.FC = () => {
                           </button>
                         )}
 
-                        {group.status === 'Sudah sampai' && (
+                        {!group.items.some(i => i.status === 'Pending' || i.status === 'Accept' || i.status === 'On going') && group.items.some(i => i.status === 'Sudah sampai') && (
                           <div className="flex flex-col items-end">
                             <span className="text-xs text-emerald-600 font-bold flex items-center space-x-1">
                               <CheckCircle2 className="w-4 h-4" />
                               <span>Selesai</span>
                             </span>
                             <span className="text-[10px] text-slate-400 mt-1">*Update stok master data dilakukan manual via Add Tools</span>
+                          </div>
+                        )}
+                        
+                        {!group.items.some(i => i.status !== 'Reject' && i.status !== 'Rejected') && (
+                          <div className="px-4 py-2 bg-rose-50 text-rose-700 font-bold rounded-lg text-xs border border-rose-200">
+                            PO Ditolak Sepenuhnya
                           </div>
                         )}
                       </div>
@@ -248,6 +280,43 @@ export const ProcurementApprovalPanel: React.FC = () => {
           })
         )}
       </div>
+
+      {/* PDF Preview Modal */}
+      {previewPdfUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between p-4 border-b border-slate-200 bg-slate-50">
+              <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2">
+                <FileText className="w-5 h-5 text-blue-600" />
+                Preview PDF Purchase Order
+              </h3>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    const a = document.createElement('a');
+                    a.href = previewPdfUrl;
+                    a.download = `Purchase_Order.pdf`;
+                    a.click();
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg font-bold text-sm hover:bg-blue-700 transition-colors shadow-sm"
+                >
+                  Download PDF
+                </button>
+                <button
+                  onClick={() => {
+                    URL.revokeObjectURL(previewPdfUrl);
+                    setPreviewPdfUrl(null);
+                  }}
+                  className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+            <iframe src={previewPdfUrl} className="w-full flex-1 bg-slate-100" title="PDF Preview" />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
