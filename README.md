@@ -70,8 +70,8 @@ pip install -r requirements.txt
 uvicorn main:app --reload --port 8000
 ```
 
-#### B. Backend Generative (Flask/FastAPI - Port 5000)
-Backend ini menangani fungsi Generative AI (Chatbot Asisten, PDF Analysis, dll).
+#### B. Backend Generative (FastAPI - Port 8001)
+Backend ini menangani fungsi Generative AI (Chatbot Asisten, PDF Analysis, dan Retrieval-Augmented Generation / RAG dengan ChromaDB).
 ```bash
 # Buka terminal baru, masuk ke direktori generative
 cd backend/generative
@@ -85,6 +85,7 @@ pip install -r requirements.txt
 
 # Jalankan server
 python app.py
+# (atau: uvicorn app:app --host 0.0.0.0 --port 8001)
 ```
 
 ### 2. Menjalankan Frontend Web (Next.js)

@@ -637,7 +637,7 @@ def detect_query_intent(query: str) -> str:
         return "purchase"
     if any(kw in query_lower for kw in ["where", "location", "stored", "rack", "bin", "warehouse", "located"]):
         return "location"
-    if any(kw in query_lower for kw in ["how many", "all items", "list all", "berapa", "semua barang", "apa saja", "hitung", "total"]):
+    if any(kw in query_lower for kw in ["how many", "all items", "list all", "berapa", "semua barang", "apa saja", "hitung", "total", "stock", "stok"]):
         return "aggregation"
     return "description"
 
@@ -768,7 +768,8 @@ def _merge_sku_chunks(chunks: list, intent: str = "general") -> dict:
         "purchase_date": "N/A",
         "total_value": "N/A",
         "tech_spec": "N/A",
-        "inspection_history": []
+        "inspection_history": [],
+        "stock": "N/A"
     }
 
     # Helper regex extractors
@@ -862,6 +863,15 @@ def _merge_sku_chunks(chunks: list, intent: str = "general") -> dict:
                 seen_history.add(record)
                 fields["inspection_history"].append(record)
 
+    # 14. Stock
+    m_stock = re.search(r'stok\s+saat\s+ini\s*[\|:]\s*([^\n\r\|]+)', combined_text, re.IGNORECASE)
+    if m_stock:
+        fields["stock"] = m_stock.group(1).strip()
+    else:
+        m_stock2 = re.search(r'stock\s*[\|:]\s*([^\n\r\|]+)', combined_text, re.IGNORECASE)
+        if m_stock2:
+            fields["stock"] = m_stock2.group(1).strip()
+
     # Let's clean N/A or empty values
     for k, v in fields.items():
         if isinstance(v, str):
@@ -894,6 +904,11 @@ def _merge_sku_chunks(chunks: list, intent: str = "general") -> dict:
                 fields[k] = [] if isinstance(fields[k], list) else "N/A"
     elif intent == "purchase":
         allowed = ["item_name", "unit_price", "purchase_date", "total_value"]
+        for k in fields:
+            if k not in allowed:
+                fields[k] = [] if isinstance(fields[k], list) else "N/A"
+    elif intent == "aggregation":
+        allowed = ["item_name", "stock"]
         for k in fields:
             if k not in allowed:
                 fields[k] = [] if isinstance(fields[k], list) else "N/A"
@@ -944,24 +959,27 @@ def _generate_structured_answer(fields: dict, query: str, sku: str) -> str:
 
     # Detect query intent
     intent = detect_query_intent(query)
+    
+    stock = fields.get("stock", "N/A")
+    stock_str = f" Stok saat ini adalah {stock}." if stock != "N/A" else ""
 
     # 1. Location Intent
     if intent == "location":
         if not location_str:
             return "Location information is not available."
-        return f"The {item} ({sku}) is {location_str}."
+        return f"The {item} ({sku}) is {location_str}.{stock_str}"
 
     # 2. Calibration Intent
     if intent == "calibration":
         if cal_date == "N/A":
             return "Calibration information is not available."
-        return f"The {item} ({sku}) requires periodic calibration. The next calibration date is {cal_date}."
+        return f"The {item} ({sku}) requires periodic calibration. The next calibration date is {cal_date}.{stock_str}"
 
     # 3. Inspection Intent
     if intent == "inspection":
         history_str = " ".join(history) if history else ""
         history_part = f" History: {history_str}" if history_str else ""
-        return f"The inspection record for {item} ({sku}) is as follows: Status: {status}. Condition: {condition}.{history_part}"
+        return f"The inspection record for {item} ({sku}) is as follows: Status: {status}. Condition: {condition}.{history_part}{stock_str}"
 
     # 4. Purchase Intent
     if intent == "purchase":
@@ -974,7 +992,7 @@ def _generate_structured_answer(fields: dict, query: str, sku: str) -> str:
             purchase_details.append(f"Total Value: {val_total}")
         
         pd_str = ", ".join(purchase_details) if purchase_details else "Purchase details not available"
-        return f"Purchase details for {item} ({sku}): {pd_str}."
+        return f"Purchase details for {item} ({sku}): {pd_str}.{stock_str}"
 
     # 5. Specification Intent
     if intent == "specification":
@@ -987,16 +1005,16 @@ def _generate_structured_answer(fields: dict, query: str, sku: str) -> str:
             spec_details.append(f"Technical Specs: {tech_spec}")
         
         spec_str = ". ".join(spec_details) if spec_details else "Specification details not available"
-        return f"Specifications for {item} ({sku}): {spec_str}."
+        return f"Specifications for {item} ({sku}): {spec_str}.{stock_str}"
 
-    # 6. Fallback/Description Intent (general information)
+    # 6. Fallback/Description/Aggregation Intent (general information)
     is_sku_query = bool(re.search(r'BRG-[A-Z]{3}-\d{3}', query.upper()))
-    if is_sku_query:
+    if is_sku_query or intent == "aggregation":
         dept_str = f" belongs to the {dept} department and" if dept != "N/A" else ""
         if location_str:
-            return f"The {item} ({sku}){dept_str} is {location_str}."
+            return f"The {item} ({sku}){dept_str} is {location_str}.{stock_str}"
         else:
-            return f"The {item} ({sku}){dept_str} is stored in the ToolCrib Warehouse."
+            return f"The {item} ({sku}){dept_str} is stored in the ToolCrib Warehouse.{stock_str}"
 
     desc_parts = [f"The {item} ({sku}) is registered in the ToolCrib inventory."]
     if dept != "N/A":
@@ -1005,7 +1023,6 @@ def _generate_structured_answer(fields: dict, query: str, sku: str) -> str:
         desc_parts.append(f"It is {location_str}.")
     if cal_date != "N/A":
         desc_parts.append(f"Its next calibration date is {cal_date}.")
-
+    desc_parts.append(f"Status: {status}, Condition: {condition}.{stock_str}")
+    
     return " ".join(desc_parts)
-
-

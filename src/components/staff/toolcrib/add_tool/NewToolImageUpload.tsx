@@ -28,8 +28,8 @@ export const NewToolImageUpload: React.FC<NewToolImageUploadProps> = ({ item, on
           <ImageIcon className="w-6 h-6 text-slate-500" />
           <span>Foto / Gambar Barang</span>
         </label>
-        <span className="text-sm font-bold text-red-600 bg-red-50 border border-red-200 px-3 py-1 rounded-md">
-          * WAJIB
+        <span className="text-sm font-bold text-slate-500 bg-slate-200 border border-slate-300 px-3 py-1 rounded-md">
+          OPSIONAL
         </span>
       </div>
 
