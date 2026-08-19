@@ -46,7 +46,7 @@ async def startup_event():
                 
                 # Pre-warm model Duplicate Detector NLP
                 df_sku, _, _ = get_data()
-                await asyncio.to_thread(detector.detect_duplicate_sku, df_sku, 0.60)
+                await asyncio.to_thread(detector.detect_duplicate_sku, df_sku, 0.40)
                 
                 print("[PREDICTIVE AI] Auto-Sync Complete.")
             except Exception as e:
@@ -156,7 +156,7 @@ def get_critical_spares():
 
 
 @app.get("/api/ai/duplicates")
-def get_duplicate_skus(threshold: float = 0.60):
+def get_duplicate_skus(threshold: float = 0.40):
     try:
         df_sku, _, _ = get_data()
         df_result = detector.detect_duplicate_sku(df_sku, threshold)
