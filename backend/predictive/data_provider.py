@@ -3,10 +3,12 @@ import os
 from dotenv import load_dotenv
 from supabase import create_client
 
-# Memuat variabel lingkungan dari root proyek
-load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '..', '.env.local'))
-load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
-load_dotenv()
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+env_path = Path(__file__).resolve().parent.parent.parent / '.env.local'
+load_dotenv(dotenv_path=env_path, override=True)
 
 SUPABASE_URL = os.getenv("NEXT_PUBLIC_SUPABASE_URL")
 SUPABASE_KEY = os.getenv("NEXT_PUBLIC_SUPABASE_ANON_KEY")
