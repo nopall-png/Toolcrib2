@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Filter, AlertOctagon, TrendingDown, CheckCircle2, ShoppingCart, BrainCircuit, Activity, Replace, Loader2 } from 'lucide-react';
+import { Filter, AlertOctagon, TrendingDown, CheckCircle2, ShoppingCart, BrainCircuit, Activity, AlertTriangle, Loader2 } from 'lucide-react';
 import { fetchCriticalSpares } from '@/src/lib/api-ai';
 
 
@@ -12,6 +12,7 @@ export const CriticalSparesTab = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [spares, setSpares] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [confirmOrder, setConfirmOrder] = useState<{ idx: number; sku: string; desc: string; notes: string } | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -65,23 +66,6 @@ export const CriticalSparesTab = () => {
     return item.class === filterClass;
   });
 
-  const handleEmergencyOrder = (idx: number) => {
-    const newSpares = [...spares];
-    const item = newSpares[idx];
-
-    // Ubah status menjadi sudah diorder
-    item.isOrdered = true;
-    setSpares(newSpares);
-
-    // Tampilkan notifikasi
-    setToastMsg(`Purchase Order (PO) Darurat untuk ${item.sku} telah otomatis dikirim ke departemen Purchasing.`);
-
-    // Hilangkan notifikasi setelah 4 detik
-    setTimeout(() => {
-      setToastMsg(null);
-    }, 4000);
-  };
-
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-slate-400">
@@ -99,6 +83,63 @@ export const CriticalSparesTab = () => {
         <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3 rounded-xl flex items-center space-x-2 text-sm font-bold shadow-sm animate-in fade-in slide-in-from-top-2">
           <CheckCircle2 className="w-5 h-5 text-emerald-500" />
           <span>{toastMsg}</span>
+        </div>
+      )}
+
+      {/* Modal Konfirmasi Order Darurat */}
+      {confirmOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl border border-red-200 shadow-xl max-w-md w-full animate-in fade-in zoom-in-95">
+            <div className="p-6 space-y-4">
+              <div className="flex items-center gap-3 text-red-700">
+                <AlertTriangle className="w-6 h-6" />
+                <h3 className="font-bold text-lg">Konfirmasi PO Darurat</h3>
+              </div>
+              <p className="text-sm text-slate-600">
+                Kamu akan membuat <strong>Purchase Order Darurat</strong> untuk:
+              </p>
+              <div className="bg-red-50 border border-red-100 rounded-xl p-3 space-y-1">
+                <p className="font-bold text-slate-800">{confirmOrder.sku}</p>
+                <p className="text-xs text-slate-600">{confirmOrder.desc}</p>
+              </div>
+              <p className="text-xs text-slate-500">
+                PO ini akan dikirim langsung ke departemen Purchasing untuk diproses secepat mungkin.
+              </p>
+              <div>
+                <label className="text-xs font-bold text-slate-600 block mb-1">Catatan (opsional):</label>
+                <textarea
+                  value={confirmOrder.notes}
+                  onChange={e => setConfirmOrder(prev => prev ? { ...prev, notes: e.target.value } : null)}
+                  placeholder="Contoh: Mesin CNC sudah berhenti, prioritas tertinggi..."
+                  rows={2}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:border-red-400 resize-none"
+                />
+              </div>
+              <div className="flex gap-2 pt-2">
+                <button
+                  onClick={() => setConfirmOrder(null)}
+                  className="flex-1 px-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-50 transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={() => {
+                    const newSpares = [...spares];
+                    const target = newSpares[confirmOrder.idx];
+                    newSpares[confirmOrder.idx] = { ...target, isOrdered: true };
+                    setSpares(newSpares);
+                    setToastMsg(`PO Darurat untuk ${confirmOrder.sku} telah dikirim ke departemen Purchasing.`);
+                    setTimeout(() => setToastMsg(null), 5000);
+                    setConfirmOrder(null);
+                  }}
+                  className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-xl font-bold text-sm hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  <ShoppingCart className="w-4 h-4" />
+                  Kirim PO Darurat
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -186,8 +227,8 @@ export const CriticalSparesTab = () => {
                             <span>PO Diproses</span>
                           </span>
                         ) : (
-                          <button 
-                            onClick={() => handleEmergencyOrder(idx)}
+                          <button
+                            onClick={() => setConfirmOrder({ idx, sku: item.sku, desc: item.desc, notes: '' })}
                             className="flex items-center space-x-1 text-xs text-white font-bold px-3 py-1.5 bg-red-600 rounded-lg hover:bg-red-700 transition-colors shadow-sm animate-pulse"
                           >
                             <ShoppingCart className="w-3.5 h-3.5" />
