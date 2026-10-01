@@ -51,6 +51,7 @@ interface DuplicateRecord {
   actionLabel: string;
   verdict: string;
   status: 'PENDING' | 'MERGED' | 'IGNORED';
+  detailsLoaded?: boolean;
 }
 
 interface AttrItem {
@@ -266,7 +267,8 @@ function transformDuplicate(raw: any): DuplicateRecord {
     action: raw.Action || 'REVIEW',
     actionLabel: raw.Action_Label || '',
     verdict: raw.Verdict || '',
-    status: 'PENDING'
+    status: 'PENDING',
+    detailsLoaded: false
   };
 }
 
@@ -710,13 +712,177 @@ function DetailPanel({
 }
 
 // ============================================================
+// MEMOIZED ROW COMPONENT
+// ============================================================
+
+const MemoizedDuplicateRow = React.memo(({
+  item,
+  realIdx,
+  isExpanded,
+  isConfirming,
+  confirmNotes,
+  confirmActionLabel,
+  confirmActionType,
+  onToggleExpand,
+  onSetConfirmNotes,
+  onCancelConfirm,
+  onExecuteConfirm,
+  onActionClick
+}: {
+  item: DuplicateRecord;
+  realIdx: number;
+  isExpanded: boolean;
+  isConfirming: boolean;
+  confirmNotes: string;
+  confirmActionLabel: string;
+  confirmActionType: 'MERGE' | 'IGNORE' | 'SUBSTITUTE' | undefined;
+  onToggleExpand: (idx: number) => void;
+  onSetConfirmNotes: (notes: string) => void;
+  onCancelConfirm: () => void;
+  onExecuteConfirm: () => void;
+  onActionClick: (idx: number, actionType: 'MERGE' | 'IGNORE' | 'SUBSTITUTE', label: string) => void;
+}) => {
+  return (
+    <React.Fragment>
+      {/* Main Row */}
+      <tr className={`hover:bg-slate-50 transition-colors ${item.status !== 'PENDING' ? 'opacity-40' : ''}`}>
+        <td className="p-3">
+          <div className="flex items-center gap-2">
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className="font-bold text-slate-700 text-sm">{item.sku1}</span>
+                <StockBadge status={item.stockStatus1} stock={item.stock1} />
+              </div>
+              <span className="text-xs text-slate-500 block truncate max-w-[160px]">{item.desc1}</span>
+              {item.fullDesc1 && item.fullDesc1 !== item.desc1 && (
+                <span className="text-[10px] text-slate-400 italic block truncate max-w-[160px]">{item.fullDesc1}</span>
+              )}
+            </div>
+          </div>
+        </td>
+
+        <td className="p-3">
+          <div className="flex items-center gap-1.5">
+            <span className="font-bold text-slate-700 text-sm">{item.sku2}</span>
+            <StockBadge status={item.stockStatus2} stock={item.stock2} />
+          </div>
+          <span className="text-xs text-slate-500 block truncate max-w-[160px]">{item.desc2}</span>
+          {item.fullDesc2 && item.fullDesc2 !== item.desc2 && (
+            <span className="text-[10px] text-slate-400 italic block truncate max-w-[160px]">{item.fullDesc2}</span>
+          )}
+        </td>
+
+        <td className="p-3">
+          <ScoreBadge score={item.score} />
+          <div className="text-[10px] text-slate-400 mt-0.5">{item.specsMatchRate.toFixed(0)}% specs match</div>
+          <div className="text-[10px] text-slate-500">{item.priceDifference}</div>
+        </td>
+
+        <td className="p-3">
+          <ActionBadge action={item.action} />
+          <div className="text-[10px] text-slate-400 mt-1">{ACTION_CONFIG[item.action]?.tip}</div>
+        </td>
+
+        <td className="p-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => onToggleExpand(realIdx)}
+              className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${
+                isExpanded
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
+              }`}
+            >
+              {isExpanded ? 'Tutup' : 'Detail'}
+            </button>
+          </div>
+        </td>
+      </tr>
+
+      {/* Expanded Detail Row */}
+      {isExpanded && item.status === 'PENDING' && (
+        <tr className="bg-indigo-50/30">
+          <td colSpan={5} className="p-6 border-t border-indigo-100">
+            {isConfirming ? (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-4 space-y-3">
+                <div className="flex items-center gap-2 text-red-700 font-bold text-sm">
+                  <AlertTriangle className="w-5 h-5" />
+                  <span>Konfirmasi: {confirmActionLabel}</span>
+                </div>
+                <p className="text-xs text-red-600">
+                  {confirmActionType === 'MERGE'
+                    ? `Item ${item.sku1} dan ${item.sku2} akan ditandai sebagai DUPLIKAT.`
+                    : confirmActionType === 'SUBSTITUTE'
+                    ? `Item ${item.sku1} akan menggunakan ${item.sku2} sebagai pengganti.`
+                    : `Item ${item.sku1} dan ${item.sku2} akan disimpan sebagai BARANG BERBEDA.`}
+                </p>
+                <div>
+                  <label className="text-[10px] font-bold text-red-500 block mb-1">Catatan (opsional):</label>
+                  <textarea
+                    value={confirmNotes}
+                    onChange={e => onSetConfirmNotes(e.target.value)}
+                    placeholder="Tambahkan catatan jika perlu..."
+                    rows={2}
+                    className="w-full px-3 py-1.5 border border-red-200 rounded-lg text-xs text-slate-700 focus:outline-none focus:border-red-400 resize-none"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={onCancelConfirm}
+                    className="px-4 py-2 bg-white border border-red-200 text-red-600 rounded-xl font-bold text-xs hover:bg-red-100">
+                    Batal
+                  </button>
+                  <button onClick={onExecuteConfirm}
+                    className="px-4 py-2 bg-red-600 text-white rounded-xl font-bold text-xs hover:bg-red-700">
+                    Ya, Konfirmasi
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="overflow-y-auto max-h-[75vh]">
+                <DetailPanel
+                  item={item}
+                  onClose={() => onToggleExpand(realIdx)}
+                  onAction={(actionType, label) => onActionClick(realIdx, actionType, label)}
+                />
+              </div>
+            )}
+          </td>
+        </tr>
+      )}
+
+      {/* Confirmed/Merged Row Indicator */}
+      {item.status !== 'PENDING' && (
+        <tr className="bg-slate-50/50">
+          <td colSpan={5} className="p-3">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
+              {item.status === 'MERGED' ? (
+                <>
+                  <GitMerge className="w-3.5 h-3.5 text-purple-500" />
+                  <span>Duplikat dikonfirmasi</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Item disimpan terpisah</span>
+                </>
+              )}
+            </div>
+          </td>
+        </tr>
+      )}
+    </React.Fragment>
+  );
+});
+
+// ============================================================
 // MAIN COMPONENT
 // ============================================================
 
 export const DuplicateDetectionTab = () => {
   const [activeTab, setActiveTab] = useState<DuplicateTab>('duplicates');
   const [filterThreshold, setFilterThreshold] = useState(40);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchInput, setSearchInput] = useState(''); // Debounced input
+  const [searchTerm, setSearchTerm] = useState('');   // Actual filter value
   const [expandedItem, setExpandedItem] = useState<number | null>(null);
   const [duplicates, setDuplicates] = useState<DuplicateRecord[]>([]);
   const [summary, setSummary] = useState<DuplicatesResponse['summary'] | null>(null);
@@ -724,19 +890,54 @@ export const DuplicateDetectionTab = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [toasts, setToasts] = useState<{ id: number; message: string; type: 'success' | 'error' | 'info' }[]>([]);
   const [confirmAction, setConfirmAction] = useState<{ idx: number; actionType: 'MERGE' | 'IGNORE' | 'SUBSTITUTE'; label: string; notes: string } | null>(null);
+  
+  // Pagination / Infinite Scroll
+  const [visibleCount, setVisibleCount] = useState(30);
+  const observerTarget = React.useRef<HTMLDivElement>(null);
 
   // Front-end cache: simpan hasil per threshold agar tidak re-fetch
   const cacheRef = React.useRef<Map<number, { data: DuplicateRecord[]; summary: DuplicatesResponse['summary'] | null }>>(new Map());
 
-  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+  const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'success') => {
     const id = Date.now();
     setToasts(prev => [...prev, { id, message, type }]);
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 5000);
-  };
+  }, []);
 
-  const removeToast = (id: number) => {
+  const removeToast = useCallback((id: number) => {
     setToasts(prev => prev.filter(t => t.id !== id));
-  };
+  }, []);
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchTerm(searchInput);
+      setVisibleCount(30); // Reset count when search changes
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  // Infinite Scroll Observer
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries[0].isIntersecting) {
+          setVisibleCount(prev => prev + 30);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current);
+    }
+
+    return () => {
+      if (observerTarget.current) {
+        observer.unobserve(observerTarget.current);
+      }
+    };
+  }, [observerTarget]);
 
   const fetchData = useCallback(async (thresholdValue: number) => {
     // Cek cache dulu
@@ -782,6 +983,7 @@ export const DuplicateDetectionTab = () => {
   const handleThresholdChange = (value: number) => {
     setFilterThreshold(value);
     setExpandedItem(null);
+    setVisibleCount(30);
   };
 
   const handleRefresh = () => {
@@ -791,25 +993,77 @@ export const DuplicateDetectionTab = () => {
     fetchData(filterThreshold);
   };
 
-  const filteredDuplicates = duplicates.filter(item => {
-    if (item.status !== 'PENDING') return false;
-    if (item.score < filterThreshold) return false;
-    if (!searchTerm) return true;
-    const s = searchTerm.toLowerCase();
-    return (
-      item.sku1.toLowerCase().includes(s) ||
-      item.sku2.toLowerCase().includes(s) ||
-      item.desc1.toLowerCase().includes(s) ||
-      item.desc2.toLowerCase().includes(s)
-    );
-  });
+  const filteredDuplicates = React.useMemo(() => {
+    return duplicates.filter(item => {
+      if (item.status !== 'PENDING') return false;
+      if (item.score < filterThreshold) return false;
+      if (!searchTerm) return true;
+      const s = searchTerm.toLowerCase();
+      return (
+        item.sku1.toLowerCase().includes(s) ||
+        item.sku2.toLowerCase().includes(s) ||
+        item.desc1.toLowerCase().includes(s) ||
+        item.desc2.toLowerCase().includes(s)
+      );
+    });
+  }, [duplicates, filterThreshold, searchTerm]);
 
-  const handleActionClick = (idx: number, actionType: 'MERGE' | 'IGNORE' | 'SUBSTITUTE', label: string) => {
+  const handleActionClick = useCallback((idx: number, actionType: 'MERGE' | 'IGNORE' | 'SUBSTITUTE', label: string) => {
     setConfirmAction({ idx, actionType, label, notes: '' });
     setExpandedItem(null);
-  };
+  }, []);
 
-  const executeAction = async () => {
+  const handleToggleExpand = useCallback((idx: number) => {
+    setExpandedItem(prev => {
+      const isOpening = prev !== idx;
+      if (isOpening) {
+        setDuplicates(current => {
+          const item = current[idx];
+          if (!item.detailsLoaded) {
+            // Lazy load
+            fetch(`http://localhost:8000/api/ai/duplicates/detail/${encodeURIComponent(item.sku1)}/${encodeURIComponent(item.sku2)}?threshold=${filterThreshold / 100}`)
+              .then(res => res.json())
+              .then(data => {
+                if (data.status === 'success') {
+                  setDuplicates(d => {
+                    const next = [...d];
+                    next[idx] = {
+                      ...next[idx],
+                      attrComparison: data.data.Attr_Comparison || [],
+                      mismatchFields: data.data.Mismatch_Fields || '-',
+                      fullDesc1: data.data.Full_Desc_1 || next[idx].fullDesc1,
+                      fullDesc2: data.data.Full_Desc_2 || next[idx].fullDesc2,
+                      specs1: data.data.Specs_1 || next[idx].specs1,
+                      specs2: data.data.Specs_2 || next[idx].specs2,
+                      detailsLoaded: true
+                    };
+                    // Update cache
+                    const cached = cacheRef.current.get(filterThreshold);
+                    if (cached) {
+                      cached.data = next;
+                    }
+                    return next;
+                  });
+                }
+              })
+              .catch(err => console.error("Failed to fetch detail:", err));
+          }
+          return current;
+        });
+      }
+      return isOpening ? idx : null;
+    });
+  }, [filterThreshold]);
+
+  const handleSetConfirmNotes = useCallback((notes: string) => {
+    setConfirmAction(prev => prev ? { ...prev, notes } : null);
+  }, []);
+
+  const handleCancelConfirm = useCallback(() => {
+    setConfirmAction(null);
+  }, []);
+
+  const executeAction = useCallback(async () => {
     if (!confirmAction) return;
     const { idx, actionType, notes } = confirmAction;
     const newDuplicates = [...duplicates];
@@ -843,7 +1097,7 @@ export const DuplicateDetectionTab = () => {
     setDuplicates(newDuplicates);
     setExpandedItem(null);
     setConfirmAction(null);
-  };
+  }, [confirmAction, duplicates, showToast]);
 
   // ============================================================
   // RENDER: LOADING
@@ -949,6 +1203,9 @@ export const DuplicateDetectionTab = () => {
           <p className="text-[10px] text-slate-500 mt-0.5">
             AI menganalisis kemiripan nama, spesifikasi, dan deskripsi barang.
           </p>
+          <p className="text-[10px] font-bold text-indigo-600 mt-1">
+            Menampilkan {Math.min(visibleCount, filteredDuplicates.length)} dari {filteredDuplicates.length} pasangan
+          </p>
         </div>
 
         <div className="flex items-center gap-2 sm:ml-auto">
@@ -957,8 +1214,8 @@ export const DuplicateDetectionTab = () => {
             <input
               type="text"
               placeholder="Cari SKU..."
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
+              value={searchInput}
+              onChange={e => setSearchInput(e.target.value)}
               className="bg-transparent text-xs font-semibold text-slate-700 focus:outline-none w-28 placeholder:font-normal"
             />
           </div>
@@ -1012,146 +1269,39 @@ export const DuplicateDetectionTab = () => {
                 </td>
               </tr>
             ) : (
-              filteredDuplicates.map((item) => {
+              filteredDuplicates.slice(0, visibleCount).map((item) => {
                 const realIdx = duplicates.indexOf(item);
+                const isExpanded = expandedItem === realIdx;
+                const isConfirming = confirmAction?.idx === realIdx;
                 return (
-                  <React.Fragment key={realIdx}>
-                    {/* Main Row */}
-                    <tr className={`hover:bg-slate-50 transition-colors ${item.status !== 'PENDING' ? 'opacity-40' : ''}`}>
-                      <td className="p-3">
-                        <div className="flex items-center gap-2">
-                          <div>
-                            <div className="flex items-center gap-1.5">
-                              <span className="font-bold text-slate-700 text-sm">{item.sku1}</span>
-                              <StockBadge status={item.stockStatus1} stock={item.stock1} />
-                            </div>
-                            <span className="text-xs text-slate-500 block truncate max-w-[160px]">{item.desc1}</span>
-                            {item.fullDesc1 && item.fullDesc1 !== item.desc1 && (
-                              <span className="text-[10px] text-slate-400 italic block truncate max-w-[160px]">{item.fullDesc1}</span>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-
-                      <td className="p-3">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-bold text-slate-700 text-sm">{item.sku2}</span>
-                          <StockBadge status={item.stockStatus2} stock={item.stock2} />
-                        </div>
-                        <span className="text-xs text-slate-500 block truncate max-w-[160px]">{item.desc2}</span>
-                        {item.fullDesc2 && item.fullDesc2 !== item.desc2 && (
-                          <span className="text-[10px] text-slate-400 italic block truncate max-w-[160px]">{item.fullDesc2}</span>
-                        )}
-                      </td>
-
-                      <td className="p-3">
-                        <ScoreBadge score={item.score} />
-                        <div className="text-[10px] text-slate-400 mt-0.5">{item.specsMatchRate.toFixed(0)}% specs match</div>
-                        <div className="text-[10px] text-slate-500">{item.priceDifference}</div>
-                      </td>
-
-                      <td className="p-3">
-                        <ActionBadge action={item.action} />
-                        <div className="text-[10px] text-slate-400 mt-1">{ACTION_CONFIG[item.action]?.tip}</div>
-                      </td>
-
-                      <td className="p-3">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <button
-                            onClick={() => setExpandedItem(expandedItem === realIdx ? null : realIdx)}
-                            className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${
-                              expandedItem === realIdx
-                                ? 'bg-indigo-600 text-white'
-                                : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
-                            }`}
-                          >
-                            {expandedItem === realIdx ? 'Tutup' : 'Detail'}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-
-                    {/* Expanded Detail Row */}
-                    {expandedItem === realIdx && item.status === 'PENDING' && (
-                      <tr className="bg-indigo-50/30">
-                        <td colSpan={5} className="p-6 border-t border-indigo-100">
-                          {confirmAction?.idx === realIdx ? (
-                            <div className="bg-red-50 border border-red-200 rounded-xl p-4 space-y-3">
-                              <div className="flex items-center gap-2 text-red-700 font-bold text-sm">
-                                <AlertTriangle className="w-5 h-5" />
-                                <span>Konfirmasi: {confirmAction.label}</span>
-                              </div>
-                              <p className="text-xs text-red-600">
-                                {confirmAction.actionType === 'MERGE'
-                                  ? `Item ${item.sku1} dan ${item.sku2} akan ditandai sebagai DUPLIKAT.`
-                                  : confirmAction.actionType === 'SUBSTITUTE'
-                                  ? `Item ${item.sku1} akan menggunakan ${item.sku2} sebagai pengganti.`
-                                  : `Item ${item.sku1} dan ${item.sku2} akan disimpan sebagai BARANG BERBEDA.`}
-                              </p>
-                              <div>
-                                <label className="text-[10px] font-bold text-red-500 block mb-1">Catatan (opsional):</label>
-                                <textarea
-                                  value={confirmAction.notes}
-                                  onChange={e => setConfirmAction(prev => prev ? { ...prev, notes: e.target.value } : null)}
-                                  placeholder="Tambahkan catatan jika perlu..."
-                                  rows={2}
-                                  className="w-full px-3 py-1.5 border border-red-200 rounded-lg text-xs text-slate-700 focus:outline-none focus:border-red-400 resize-none"
-                                />
-                              </div>
-                              <div className="flex gap-2">
-                                <button onClick={() => setConfirmAction(null)}
-                                  className="px-4 py-2 bg-white border border-red-200 text-red-600 rounded-xl font-bold text-xs hover:bg-red-100">
-                                  Batal
-                                </button>
-                                <button onClick={executeAction}
-                                  className="px-4 py-2 bg-red-600 text-white rounded-xl font-bold text-xs hover:bg-red-700">
-                                  Ya, Konfirmasi
-                                </button>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="overflow-y-auto max-h-[75vh]">
-                              <DetailPanel
-                                item={item}
-                                onClose={() => setExpandedItem(null)}
-                                onAction={(actionType, label) => {
-                                  const ri = duplicates.indexOf(item);
-                                  handleActionClick(ri, actionType, label);
-                                }}
-                              />
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    )}
-
-                    {/* Confirmed/Merged Row Indicator */}
-                    {item.status !== 'PENDING' && (
-                      <tr className="bg-slate-50/50">
-                        <td colSpan={5} className="p-3">
-                          <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
-                            {item.status === 'MERGED' ? (
-                              <>
-                                <GitMerge className="w-3.5 h-3.5 text-purple-500" />
-                                <span>Duplikat dikonfirmasi</span>
-                              </>
-                            ) : (
-                              <>
-                                <CheckCircle className="w-3.5 h-3.5 text-slate-400" />
-                                <span>Item disimpan terpisah</span>
-                              </>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </React.Fragment>
+                  <MemoizedDuplicateRow
+                    key={realIdx}
+                    item={item}
+                    realIdx={realIdx}
+                    isExpanded={isExpanded}
+                    isConfirming={isConfirming}
+                    confirmNotes={confirmAction?.notes || ''}
+                    confirmActionLabel={confirmAction?.label || ''}
+                    confirmActionType={confirmAction?.actionType}
+                    onToggleExpand={handleToggleExpand}
+                    onSetConfirmNotes={handleSetConfirmNotes}
+                    onCancelConfirm={handleCancelConfirm}
+                    onExecuteConfirm={executeAction}
+                    onActionClick={handleActionClick}
+                  />
                 );
               })
             )}
           </tbody>
         </table>
       </div>
+
+      {/* Infinite Scroll Trigger Target */}
+      {visibleCount < filteredDuplicates.length && (
+        <div ref={observerTarget} className="flex justify-center py-4">
+          <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
+        </div>
+      )}
 
       {/* Legend */}
       <div className="flex flex-wrap items-center gap-3 text-[10px] text-slate-400">

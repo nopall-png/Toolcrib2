@@ -43,35 +43,35 @@ Phase 4 fokus pada tiga hal utama:
 
 > 7 item ini perlu dijalankan sama tim backend. Ceklis di bawah untuk tracking.
 
-- [ ] **(1) Jalankan migration SQL di Supabase Dashboard**
+- [x] **(1) Jalankan migration SQL di Supabase Dashboard**
   - Buka Supabase → SQL Editor → paste isi `supabase/migrations/001_create_duplicate_decisions.sql` → klik Run
   - Verify tabel `duplicate_decisions` muncul di Table Editor
 
-- [ ] **(2) Test endpoint `POST /api/ai/duplicate-decisions` via curl/Postman**
+- [x] **(2) Test endpoint `POST /api/ai/duplicate-decisions` via curl/Postman**
   - Payload: `{ "sku1": "WR-001", "sku2": "WR-002", "action": "MERGE", "similarity_score": 92.5, "notes": "Test dari curl" }`
   - Expected: `200 OK` + `{ "status": "success", "id": "<uuid>", "message": "..." }`
   - Verify row baru masuk di tabel `duplicate_decisions` Supabase
 
-- [ ] **(3) Test error case (invalid action)**
+- [x] **(3) Test error case (invalid action)**
   - Kirim `action: "INVALID"` → expected `400 Bad Request`
   - Verify error message menyebut action yang valid
 
-- [ ] **(4) Test alur penuh dari UI ke DB**
+- [x] **(4) Test alur penuh dari UI ke DB**
   - Start backend: `python -m uvicorn predictive_ai:app --port 8000`
   - Start frontend: `npm run dev`
   - Buka tab AI Predictive Insight → Duplicate SKU → klik "Merge Duplikat" → konfirmasi di dialog
   - Verify toast success muncul
   - Cek di Supabase Table Editor → `duplicate_decisions` → row baru dengan action `MERGE`
 
-- [ ] **(5) Tambah endpoint `GET /api/ai/duplicate-decisions` (opsional, history audit)**
+- [x] **(5) Tambah endpoint `GET /api/ai/duplicate-decisions` (opsional, history audit)**
   - Return semua keputusan staff dengan filter by date range / action
   - Pakai di audit log atau dashboard admin nanti
 
-- [ ] **(6) Setup RLS policy untuk tabel `duplicate_decisions`**
+- [x] **(6) Setup RLS policy untuk tabel `duplicate_decisions`**
   - Supabase Row Level Security: staff authenticated bisa INSERT, hanya admin yang bisa DELETE/UPDATE
   - SQL: `CREATE POLICY "Staff can insert decisions" ON duplicate_decisions FOR INSERT TO authenticated WITH CHECK (true);`
 
-- [ ] **(7) Verifikasi di browser DevTools**
+- [x] **(7) Verifikasi di browser DevTools**
   - Buka Network tab saat klik "Merge"
   - Lihat request ke `http://localhost:8000/api/ai/duplicate-decisions` dengan method `POST`
   - Response status `200` + body JSON yang valid

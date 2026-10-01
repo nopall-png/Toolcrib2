@@ -92,7 +92,13 @@ export const recordDuplicateDecision = async (params: {
     const res = await fetch(`${API_BASE_URL}/duplicate-decisions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(params),
+      body: JSON.stringify({
+        sku1: params.sku1,
+        sku2: params.sku2,
+        action: params.action,
+        similarity_score: params.similarityScore,
+        notes: params.notes || ""
+      }),
     });
     if (!res.ok) {
       const err = await res.json();

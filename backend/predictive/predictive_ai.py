@@ -8,8 +8,10 @@ Port: 8000
 
 from fastapi import FastAPI, HTTPException, Query, Body
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from pydantic import BaseModel
 import pandas as pd
+import numpy as np
 
 try:
     from criticality_classifier import CriticalityClassifier
@@ -144,6 +146,7 @@ def get_dynamic_minmax():
             
         df_result['Status'] = df_result.apply(determine_status, axis=1)
 
+        df_result = df_result.replace({np.nan: None})
         return {"status": "success", "data": df_result.to_dict(orient="records")}
     except Exception as e:
         import traceback
@@ -157,6 +160,7 @@ def get_inventory_optimization():
             return {"error": "InventoryOptimizer tidak tersedia. Pastikan semua dependency terinstall."}
         df_sku, _, df_trx = get_data()
         df_result = inv_opt_engine.generate_optimization_opportunities(df_sku, df_trx)
+        df_result = df_result.replace({np.nan: None})
         return {"status": "success", "data": df_result.to_dict(orient="records")}
     except Exception as e:
         import traceback
@@ -177,6 +181,8 @@ def get_critical_spares():
         
         df_result['Current_Stock'] = df_result['Current_Stock'].fillna(0)
         df_result['Dynamic_Min_ROP'] = df_result['Dynamic_Min_ROP'].fillna(1)
+        
+        df_result = df_result.replace({np.nan: None})
         
         return {"status": "success", "data": df_result.to_dict(orient="records")}
     except Exception as e:
@@ -226,11 +232,49 @@ def get_duplicate_skus(threshold: float = 0.40):
                 "avg_similarity": 0
             }
 
+        # Create lightweight version for list
+        if not df_result.empty:
+            heavy_cols = ['Attr_Comparison', 'Mismatch_Fields', 'Full_Desc_1', 'Full_Desc_2', 'Specs_1', 'Specs_2']
+            df_light = df_result.drop(columns=[c for c in heavy_cols if c in df_result.columns])
+            df_light = df_light.replace({np.nan: None})
+            list_data = df_light.to_dict(orient="records")
+        else:
+            list_data = []
+
         return {
             "status": "success",
             "summary": summary,
             "threshold_used": threshold,
-            "data": df_result.to_dict(orient="records")
+            "data": list_data
+        }
+    except Exception as e:
+        import traceback
+        return {"error": str(e), "traceback": traceback.format_exc()}
+
+@app.get("/api/ai/duplicates/detail/{sku1}/{sku2}")
+def get_duplicate_pair_detail(sku1: str, sku2: str, threshold: float = 0.40):
+    try:
+        if detector is None:
+            return {"error": "DuplicateDetector tidak tersedia."}
+        df_sku, _, _ = get_data()
+        df_result = detector.detect_duplicate_sku(df_sku, threshold)
+        
+        if df_result.empty:
+            raise HTTPException(status_code=404, detail="Pair not found")
+            
+        pair = df_result[(df_result['SKU_1'] == sku1) & (df_result['SKU_2'] == sku2)]
+        if pair.empty:
+            pair = df_result[(df_result['SKU_1'] == sku2) & (df_result['SKU_2'] == sku1)]
+            
+        if pair.empty:
+            raise HTTPException(status_code=404, detail="Pair not found")
+            
+        pair_dict = pair.iloc[0].to_dict()
+        pair_dict = {k: (None if pd.isna(v) else v) for k, v in pair_dict.items()}
+        
+        return {
+            "status": "success",
+            "data": pair_dict
         }
     except Exception as e:
         import traceback
@@ -254,6 +298,17 @@ def get_substitutes(sku_id: str, threshold: float = 0.40):
 
         df_sku, _, _ = get_data()
         result = detector.find_substitutes(df_sku, sku_id, threshold)
+        
+        def sanitize_dict(d):
+            if isinstance(d, dict):
+                return {k: sanitize_dict(v) for k, v in d.items()}
+            elif isinstance(d, list):
+                return [sanitize_dict(v) for v in d]
+            elif pd.isna(d):
+                return None
+            return d
+            
+        result = sanitize_dict(result)
         return {"status": "success", **result}
     except Exception as e:
         import traceback
@@ -373,6 +428,32 @@ def record_duplicate_decision(body: DuplicateDecisionRequest):
 
     except HTTPException:
         raise
+    except Exception as e:
+        import traceback
+        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
+
+
+@app.get("/api/ai/duplicate-decisions")
+def get_duplicate_decisions(action: str = None, limit: int = 50):
+    """
+    Mengambil riwayat keputusan staff untuk audit log.
+    Opsional filter: action (MERGE, IGNORE, SUBSTITUTE)
+    """
+    try:
+        from data_provider import supabase
+        
+        query = supabase.table('duplicate_decisions').select('*')
+        
+        if action:
+            query = query.eq('action', action)
+            
+        result = query.order('created_at', desc=True).limit(limit).execute()
+        
+        return {
+            "status": "success",
+            "count": len(result.data),
+            "data": result.data
+        }
     except Exception as e:
         import traceback
         return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}

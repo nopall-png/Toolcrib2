@@ -25,7 +25,7 @@ import { AbcXyzClassificationTab } from './AbcXyzClassificationTab';
 type AiTab = 'abcxyz' | 'duplicates' | 'critical' | 'forecast' | 'optimization' | 'minmax';
 
 export const AiInsightsView: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<AiTab>('duplicates');
+  const [activeTab, setActiveTab] = useState<AiTab>('abcxyz');
   const [summary, setSummary] = useState({
     health_score: 0,
     class_a_count: 0,
