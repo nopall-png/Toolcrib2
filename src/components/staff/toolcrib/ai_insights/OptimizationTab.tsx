@@ -1,26 +1,15 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Filter, TrendingUp, CheckCircle2, Zap, Loader2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Filter, TrendingUp, CheckCircle2, Zap, Loader2, AlertTriangle } from 'lucide-react';
 import { fetchInventoryOptimization } from '@/src/lib/api-ai';
-
-interface OptimizationItem {
-  SKU_ID: string;
-  Description: string;
-  Current_Stock: number;
-  Optimal_Max: number;
-  Optimal_Min: number;
-  Status: string;
-  Action: string;
-  Impact_Value: number;
-  Recommendation: string;
-}
 
 export const OptimizationTab = () => {
   const [filterAction, setFilterAction] = useState('ALL');
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [optimizations, setOptimizations] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [confirmExec, setConfirmExec] = useState<{ idx: number; sku: string; action: string; notes: string } | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -73,12 +62,18 @@ export const OptimizationTab = () => {
   });
 
   const handleExecute = (idx: number) => {
-    const newOpts = [...optimizations];
-    newOpts[idx].isExecuted = true;
-    setOptimizations(newOpts);
+    const item = optimizations[idx];
+    setConfirmExec({ idx, sku: item.sku, action: item.action, notes: '' });
+  };
 
-    setToastMsg(`Tindakan optimasi untuk ${newOpts[idx].sku} sedang diproses oleh sistem.`);
-    setTimeout(() => setToastMsg(null), 4000);
+  const confirmExecute = () => {
+    if (!confirmExec) return;
+    const newOpts = [...optimizations];
+    newOpts[confirmExec.idx].isExecuted = true;
+    setOptimizations(newOpts);
+    setToastMsg(`Tindakan optimasi untuk ${confirmExec.sku} sedang diproses oleh sistem.`);
+    setTimeout(() => setToastMsg(null), 5000);
+    setConfirmExec(null);
   };
 
   if (isLoading) {
@@ -96,6 +91,52 @@ export const OptimizationTab = () => {
         <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3 rounded-xl flex items-center space-x-2 text-sm font-bold shadow-sm animate-in fade-in slide-in-from-top-2">
           <CheckCircle2 className="w-5 h-5 text-emerald-500" />
           <span>{toastMsg}</span>
+        </div>
+      )}
+
+      {/* Modal Konfirmasi Eksekusi Optimasi */}
+      {confirmExec && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl border border-indigo-200 shadow-xl max-w-md w-full animate-in fade-in zoom-in-95">
+            <div className="p-6 space-y-4">
+              <div className="flex items-center gap-3 text-indigo-700">
+                <AlertTriangle className="w-6 h-6" />
+                <h3 className="font-bold text-lg">Konfirmasi Tindakan Optimasi</h3>
+              </div>
+              <p className="text-sm text-slate-600">
+                Kamu akan menandai tindakan AI ini sebagai sudah dieksekusi:
+              </p>
+              <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-3 space-y-1">
+                <p className="font-bold text-slate-800">{confirmExec.sku}</p>
+                <p className="text-xs text-slate-600">Tindakan: <strong>{confirmExec.action}</strong></p>
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-600 block mb-1">Catatan (opsional):</label>
+                <textarea
+                  value={confirmExec.notes}
+                  onChange={e => setConfirmExec(prev => prev ? { ...prev, notes: e.target.value } : null)}
+                  placeholder="Contoh: Sudah dipesan via telepon ke vendor..."
+                  rows={2}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:border-indigo-400 resize-none"
+                />
+              </div>
+              <div className="flex gap-2 pt-2">
+                <button
+                  onClick={() => setConfirmExec(null)}
+                  className="flex-1 px-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-50 transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={confirmExecute}
+                  className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Zap className="w-4 h-4" />
+                  Eksekusi
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

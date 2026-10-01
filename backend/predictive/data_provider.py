@@ -63,11 +63,13 @@ def get_all_items() -> pd.DataFrame:
         'technical_specs': 'Technical_Specs',
         'image_url': 'Image_URL'
     })
-    
+
     df_sku['Unit_Price'] = pd.to_numeric(df_sku['Unit_Price'], errors='coerce').fillna(0)
     df_sku['Lead_Time_Days'] = pd.to_numeric(df_sku['Lead_Time_Days'], errors='coerce').fillna(7).astype(int)
     df_sku['Current_Stock'] = pd.to_numeric(df_sku['Current_Stock'], errors='coerce').fillna(0).astype(int)
     df_sku['Base_Machine_Impact_Score'] = pd.to_numeric(df_sku['Base_Machine_Impact_Score'], errors='coerce').fillna(50).astype(int)
+    df_sku['Min_Stock'] = pd.to_numeric(df_sku['Min_Stock'], errors='coerce').fillna(1).astype(int)
+    df_sku['Max_Stock'] = pd.to_numeric(df_sku['Max_Stock'], errors='coerce').fillna(10).astype(int)
 
     return df_sku
 
@@ -171,31 +173,17 @@ def get_daily_usage(tool_code: str) -> float:
     return float(adu)
 
 
-def update_ai_cache(payload: list) -> bool:
-    try:
-        for item in payload:
-            supabase.table("tools").update({
-                "ai_min_stock": item.get("ai_min_stock"),
-                "ai_max_stock": item.get("ai_max_stock"),
-                "abc_class": item.get("abc_class"),
-                "xyz_class": item.get("xyz_class")
-            }).eq("id", item.get("id")).execute()
-        return True
-    except Exception as e:
-        print("Failed to update AI cache in Supabase:", e)
-        return False
-
-
 def get_data():
+    """Mengambil seluruh data yang dibutuhkan oleh AI engine."""
     df_sku = get_all_items()
     df_trx = get_transactions()
-    
+
     if not df_sku.empty:
         tools_dict = {row['SKU_ID']: row['id'] for _, row in df_sku.iterrows() if 'id' in df_sku.columns}
         if 'id' not in df_sku.columns:
             tools_data = fetch_all_rows('tools', 'id, code')
             tools_dict = {t['code']: t['id'] for t in tools_data}
-            
+
         mt_data = fetch_all_rows('machine_tools', 'tool_id, impact_weight')
         mt_scores = {}
         for r in mt_data:
@@ -203,7 +191,7 @@ def get_data():
             weight = r.get('impact_weight') or 50
             if tid not in mt_scores or weight > mt_scores[tid]:
                 mt_scores[tid] = weight
-                
+
         scores = []
         for _, row in df_sku.iterrows():
             code = row['SKU_ID']
@@ -212,24 +200,29 @@ def get_data():
             rel_score = mt_scores.get(tid, 0) if tid else 0
             final_score = max(base_score, rel_score)
             scores.append(final_score)
-            
+
         df_sku['Machine_Score'] = scores
 
     df_machines = pd.DataFrame(columns=['Machine_ID', 'Machine_Name', 'Location', 'Downtime_Impact', 'Required_Parts'])
-    
+
     return df_sku, df_machines, df_trx
+
+
+def get_tools_list() -> list:
+    """Mengambil daftar tools (code, name) untuk dropdown di UI."""
+    tools_data = fetch_all_rows("tools", "code, name")
+    return [{"code": t["code"], "name": t["name"]} for t in tools_data]
 
 
 def update_ai_cache(payload: list) -> bool:
     """
-    Melakukan update ke tabel tools di Supabase untuk memperbarui 
+    Melakukan update ke tabel tools di Supabase untuk memperbarui
     kolom cache AI (ai_min_stock, ai_max_stock, abc_class, xyz_class).
     """
     if not payload:
         return True
-        
+
     try:
-        # Use update instead of upsert to avoid NOT NULL constraint errors on other columns
         for item in payload:
             item_id = item.pop('id')
             supabase.table('tools').update(item).eq('id', item_id).execute()
