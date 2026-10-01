@@ -389,6 +389,7 @@ class ToolCribRAG:
                 skus.append(r["sku"])
 
         context = "\n\n---\n\n".join(context_parts)
+        context = context.replace("(cid:127)", "-")
 
         # If a temporary session document is loaded, prepend it to the context
         if has_session_doc:
@@ -529,7 +530,10 @@ class ToolCribRAG:
             "which tools", "which items", "what hand tools", 
             "what tools", "list of", "show me all", "what is stored in",
             "items in", "tools in", "show tools", "show items",
-            "list tools", "list items"
+            "list tools", "list items",
+            # Bahasa Indonesia
+            "barang apa saja", "apa saja yang", "apa saja barang",
+            "daftar barang", "tampilkan semua", "disimpan di", "ada di"
         ])
 
         if is_list_query and len(unique_skus) > 1:
@@ -545,23 +549,23 @@ class ToolCribRAG:
                 merged = _merge_sku_chunks(chunks)
                 item_name = merged.get("item_name", "Unknown Item")
                 
-                if "stored" in query_lower or "rack" in query_lower or "bin" in query_lower or "where" in query_lower:
+                if any(kw in query_lower for kw in ["stored", "rack", "bin", "where", "rak", "disimpan", "dimana", "di mana", "letak", "kotak", "tempat"]):
                     rack = merged.get('rack', 'N/A')
                     bin_loc = merged.get('bin', 'N/A')
                     loc_parts = []
                     if rack != "N/A":
-                        loc_parts.append(rack if rack.lower().startswith("rack") else f"Rack {rack}")
+                        loc_parts.append(rack if rack.lower().startswith("rack") else f"Rak {rack}")
                     if bin_loc != "N/A":
                         loc_parts.append(bin_loc if bin_loc.lower().startswith("bin") else f"Bin {bin_loc}")
-                    loc_str = f" in {' '.join(loc_parts)}" if loc_parts else ""
+                    loc_str = f" di {' '.join(loc_parts)}" if loc_parts else ""
                     items_list.append(f"- {item_name} ({sku}){loc_str}")
                 else:
                     items_list.append(f"- {item_name} ({sku})")
 
-            if "calibration" in query_lower or "calibrate" in query_lower:
-                return "The following tools require periodic calibration:\n" + "\n".join(items_list)
+            if any(kw in query_lower for kw in ["calibration", "calibrate", "kalibrasi"]):
+                return "Berikut adalah alat-alat yang memerlukan kalibrasi secara berkala:\n" + "\n".join(items_list)
             else:
-                return "The following tools were found in the ToolCrib inventory:\n" + "\n".join(items_list)
+                return "Berikut adalah barang-barang yang ditemukan di inventaris ToolCrib:\n" + "\n".join(items_list)
 
         # 3. Single SKU or exact SKU summary mode
         primary_sku = primary[0]["sku"]
@@ -580,7 +584,7 @@ class ToolCribRAG:
 
     def _format_context_answer(self, context: str) -> str:
         """Fallback: format raw context as answer."""
-        return f"Based on the ToolCrib database:\n\n{context[:500]}"
+        return f"Berdasarkan database ToolCrib:\n\n{context[:500]}"
 
 
 # ==============================================================================

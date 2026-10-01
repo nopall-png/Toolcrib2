@@ -121,7 +121,9 @@ def load_pdf(pdf_path: str) -> str:
                 full_text += "\n"
     
     print(f"  → Extracted {len(full_text)} characters from {page_count} pages")
+    full_text = full_text.replace("(cid:127)","-")
     return full_text
+
 
 
 # ==============================================================================

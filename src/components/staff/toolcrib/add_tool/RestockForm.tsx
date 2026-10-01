@@ -97,7 +97,10 @@ export const RestockForm: React.FC<RestockFormProps> = ({ onSuccess }) => {
         bestMatch = tool;
       }
     }
-    return bestScore >= 1 ? bestMatch : null;
+    return bestScore >= 2 ||
+      (words.length > 0 && bestScore / words.length >= 0.5)
+      ? bestMatch
+      : null;
   };
 
   const handleAutoFillFromPDF = async (file: File) => {
@@ -138,6 +141,20 @@ export const RestockForm: React.FC<RestockFormProps> = ({ onSuccess }) => {
           });
         } else {
           unmatchedItems.push(item.name);
+        }
+      }
+
+      // Guard: if multiple items share the SAME non-empty notes, it's likely
+      // an LLM hallucination — keep notes only on the first item with that note.
+      const noteCount = new Map<string, number>();
+      for (const item of newRows) {
+        if (item.notes) {
+          noteCount.set(item.notes, (noteCount.get(item.notes) || 0) + 1);
+        }
+      }
+      for (const item of newRows) {
+        if (item.notes && (noteCount.get(item.notes) || 0) > 1) {
+          item.notes = "";
         }
       }
 
@@ -254,7 +271,8 @@ export const RestockForm: React.FC<RestockFormProps> = ({ onSuccess }) => {
       <div className="bg-white p-5 rounded-md border border-slate-200 shadow-sm space-y-4">
         <div className="flex items-center justify-between pb-4 border-b border-slate-100">
           <span className="text-xl font-bold text-slate-900 uppercase tracking-wider">
-            Daftar Barang Datang Yang Akan Ditambah Stoknya ({restockItems.length} Item)
+            Daftar Barang Datang Yang Akan Ditambah Stoknya (
+            {restockItems.length} Item)
           </span>
 
           <div className="flex items-center space-x-3">
@@ -278,7 +296,9 @@ export const RestockForm: React.FC<RestockFormProps> = ({ onSuccess }) => {
               disabled={isAutoFilling}
             >
               <Sparkles className="w-5 h-5" />
-              <span>{isAutoFilling ? 'Memproses...' : 'AI Auto-Fill from PDF'}</span>
+              <span>
+                {isAutoFilling ? "Memproses..." : "AI Auto-Fill from PDF"}
+              </span>
             </button>
 
             <button
@@ -345,8 +365,8 @@ export const RestockForm: React.FC<RestockFormProps> = ({ onSuccess }) => {
             <label className="block text-lg font-bold text-slate-700 mb-2">
               Cari & Pilih Tool Dari Master Data *
             </label>
-            
-            <div 
+
+            <div
               className="w-full bg-white border border-slate-300 rounded-xl flex items-center justify-between cursor-pointer focus-within:ring-2 focus-within:ring-red-500 focus-within:border-red-500"
               onClick={() => setIsDropdownOpen(true)}
             >
@@ -371,9 +391,12 @@ export const RestockForm: React.FC<RestockFormProps> = ({ onSuccess }) => {
               </div>
               <div className="px-4">
                 {isDropdownOpen ? (
-                  <X 
-                    className="w-6 h-6 text-slate-400 hover:text-slate-600" 
-                    onClick={(e) => { e.stopPropagation(); setIsDropdownOpen(false); }}
+                  <X
+                    className="w-6 h-6 text-slate-400 hover:text-slate-600"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsDropdownOpen(false);
+                    }}
                   />
                 ) : (
                   <ChevronDown className="w-6 h-6 text-slate-400" />
@@ -395,12 +418,16 @@ export const RestockForm: React.FC<RestockFormProps> = ({ onSuccess }) => {
                           setIsDropdownOpen(false);
                         }}
                         className={`px-5 py-3 text-base cursor-pointer hover:bg-slate-50 border-b border-slate-50 last:border-0 flex items-center justify-between ${
-                          currentRestockItem?.toolId === t.id ? 'bg-red-50 text-red-700 font-bold' : 'text-slate-700 font-medium'
+                          currentRestockItem?.toolId === t.id
+                            ? "bg-red-50 text-red-700 font-bold"
+                            : "text-slate-700 font-medium"
                         }`}
                       >
                         <div className="flex flex-col">
                           <span>{t.name}</span>
-                          <span className="text-sm text-slate-400 font-mono mt-1">{t.code}</span>
+                          <span className="text-sm text-slate-400 font-mono mt-1">
+                            {t.code}
+                          </span>
                         </div>
                         <span className="text-sm bg-slate-100 text-slate-600 px-3 py-1 rounded-md">
                           Stok: {t.stock} {t.unit}
@@ -424,8 +451,10 @@ export const RestockForm: React.FC<RestockFormProps> = ({ onSuccess }) => {
             <input
               type="number"
               min="1"
-              value={currentRestockItem?.quantityAdded || ''}
-              onChange={(e) => updateRestockRow('quantityAdded', Number(e.target.value))}
+              value={currentRestockItem?.quantityAdded || ""}
+              onChange={(e) =>
+                updateRestockRow("quantityAdded", Number(e.target.value))
+              }
               className="w-full px-5 py-4 bg-white border border-slate-300 rounded-xl text-2xl font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
               required
             />
@@ -448,7 +477,14 @@ export const RestockForm: React.FC<RestockFormProps> = ({ onSuccess }) => {
                   {selectedToolObject.name}
                 </h4>
                 <p className="text-base text-slate-500 mt-1.5">
-                  Kategori: <span className="font-semibold text-slate-700">{selectedToolObject.category}</span> | Lokasi: <span className="font-semibold text-slate-700">{selectedToolObject.location}</span>
+                  Kategori:{" "}
+                  <span className="font-semibold text-slate-700">
+                    {selectedToolObject.category}
+                  </span>{" "}
+                  | Lokasi:{" "}
+                  <span className="font-semibold text-slate-700">
+                    {selectedToolObject.location}
+                  </span>
                 </p>
               </div>
             </div>
@@ -462,8 +498,8 @@ export const RestockForm: React.FC<RestockFormProps> = ({ onSuccess }) => {
           <input
             type="text"
             placeholder="Contoh: Penerimaan PO-2026-081 dari PT Precision Tools"
-            value={currentRestockItem?.notes || ''}
-            onChange={(e) => updateRestockRow('notes', e.target.value)}
+            value={currentRestockItem?.notes || ""}
+            onChange={(e) => updateRestockRow("notes", e.target.value)}
             className="w-full px-5 py-4 bg-white border border-slate-300 rounded-xl text-lg focus:outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-400"
           />
         </div>
@@ -472,8 +508,12 @@ export const RestockForm: React.FC<RestockFormProps> = ({ onSuccess }) => {
       {/* Action Footer */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-6 p-8 bg-slate-100 border border-slate-200 rounded-xl shadow-sm">
         <div>
-          <h4 className="font-bold text-xl text-slate-900">Simpan Pembaruan Stok ({restockItems.length} Item)</h4>
-          <p className="text-base text-slate-500 mt-1">Stok barang pada Master Data akan langsung bertambah.</p>
+          <h4 className="font-bold text-xl text-slate-900">
+            Simpan Pembaruan Stok ({restockItems.length} Item)
+          </h4>
+          <p className="text-base text-slate-500 mt-1">
+            Stok barang pada Master Data akan langsung bertambah.
+          </p>
         </div>
 
         <button

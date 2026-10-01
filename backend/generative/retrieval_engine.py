@@ -86,7 +86,7 @@ TARGET_KEYWORDS = [
 # Location intent detection keywords (in query)
 LOCATION_INTENT_KEYWORDS = [
     "where", "location", "stored", "storage", "rack", "bin",
-    "warehouse", "located"
+    "warehouse", "located", "dimana", "di mana", "letak", "posisi", "disimpan", "rak", "kotak", "tempat"
 ]
 
 # Location keywords to look for inside chunk text
@@ -635,7 +635,7 @@ def detect_query_intent(query: str) -> str:
         return "inspection"
     if any(kw in query_lower for kw in ["purchase", "price", "value", "supplier", "cost"]):
         return "purchase"
-    if any(kw in query_lower for kw in ["where", "location", "stored", "rack", "bin", "warehouse", "located"]):
+    if any(kw in query_lower for kw in ["where", "location", "stored", "rack", "bin", "warehouse", "located", "dimana", "di mana", "letak", "posisi", "rak", "kotak"]):
         return "location"
     if any(kw in query_lower for kw in ["how many", "all items", "list all", "berapa", "semua barang", "apa saja", "hitung", "total", "stock", "stok"]):
         return "aggregation"
@@ -650,7 +650,7 @@ def extract_location_target(query: str) -> dict:
     
     # 1. Rack
     rack = None
-    m_rack = re.search(r'\brack\s*([a-zA-Z0-9\-]+)\b', query_lower)
+    m_rack = re.search(r'\b(?:rack|rak)\s*([a-zA-Z0-9\-]+)\b', query_lower)
     if m_rack:
         rack = m_rack.group(1).upper()
     else:
@@ -660,7 +660,7 @@ def extract_location_target(query: str) -> dict:
 
     # 2. Bin
     bin_val = None
-    m_bin = re.search(r'\bbin\s*([a-zA-Z0-9\-]+)\b', query_lower)
+    m_bin = re.search(r'\b(?:bin|kotak|box)\s*([a-zA-Z0-9\-]+)\b', query_lower)
     if m_bin:
         bin_val = m_bin.group(1).upper()
     else:

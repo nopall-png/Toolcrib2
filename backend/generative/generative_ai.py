@@ -135,7 +135,7 @@ INSTRUKSI:
 2. WAJIB balas dalam format JSON array yang valid, tanpa teks tambahan.
 3. Setiap item harus memiliki field "name" (nama barang), "quantity" (jumlah, angka), dan "notes" (keterangan tambahan jika ada).
 4. Jika jumlah tidak disebutkan, gunakan 1 sebagai default.
-5. Jika ada keterangan/notes untuk barang tersebut di dalam PDF (seperti alasan, kondisi, atau nomor referensi), masukkan ke field "notes". Jika tidak ada keterangan sama sekali, kosongkan string "".
+5. FIELD "notes" SANGAT KHUSUS: Isi field "notes" HANYA jika ada keterangan/catatan yang SECARA EKSPLISIT melekat pada barang tersebut di PDF (misalnya "kondisi rusak", "pengganti", "referensi PO#xxx"). Jika barang TIDAK memiliki keterangan sama sekali di PDF, HARUS kosongkan "" — JANGAN copy atau transfer keterangan dari satu barang ke barang lain.
 6. HANYA balas dengan JSON array, JANGAN tambahkan penjelasan apapun.
 
 CONTOH FORMAT BALASAN:
