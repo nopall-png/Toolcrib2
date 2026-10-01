@@ -66,6 +66,23 @@ class DuplicateDetector:
 
         return ". ".join(parts)
 
+    def _wrap_text(self, text: str, max_len: int = 30) -> str:
+        """Wrap long text with \n at word boundaries, max_len chars per line."""
+        if not text or len(text) <= max_len:
+            return text
+        words = text.split()
+        lines, current = [], ""
+        for word in words:
+            if len(current) + len(word) + 1 <= max_len:
+                current = (current + " " + word).strip()
+            else:
+                if current:
+                    lines.append(current)
+                current = word
+        if current:
+            lines.append(current)
+        return "\n".join(lines)
+
     def _parse_specs(self, specs_raw):
         """Parse technical specs dari berbagai format."""
         if specs_raw is None or (isinstance(specs_raw, float) and pd.isna(specs_raw)):
@@ -202,7 +219,8 @@ class DuplicateDetector:
             specs = self._parse_specs(specs_raw)
             if not specs:
                 return '-'
-            return ', '.join([f"{k}: {v}" for k, v in specs.items()])
+            raw = ', '.join([f"{k}: {v}" for k, v in specs.items()])
+            return self._wrap_text(raw)
 
         for i, j in zip(i_indices, j_indices):
             item1 = df_sku.iloc[i]
@@ -279,14 +297,14 @@ class DuplicateDetector:
             c1 = safe_str(item1.get('Category'))
             c2 = safe_str(item2.get('Category'))
             attr_comparison.append({
-                'field': 'Kategori', 'val1': c1, 'val2': c2,
+                'field': 'Kategori', 'val1': self._wrap_text(c1), 'val2': self._wrap_text(c2),
                 'match': c1.lower() == c2.lower() and c1 != '-'
             })
 
             u1 = safe_str(item1.get('Unit'))
             u2 = safe_str(item2.get('Unit'))
             attr_comparison.append({
-                'field': 'Satuan', 'val1': u1, 'val2': u2,
+                'field': 'Satuan', 'val1': self._wrap_text(u1), 'val2': self._wrap_text(u2),
                 'match': u1.lower() == u2.lower() and u1 != '-'
             })
 
@@ -304,14 +322,14 @@ class DuplicateDetector:
             b1 = get_brand_from_specs(item1)
             b2 = get_brand_from_specs(item2)
             attr_comparison.append({
-                'field': 'Merek', 'val1': b1, 'val2': b2,
+                'field': 'Merek', 'val1': self._wrap_text(b1), 'val2': self._wrap_text(b2),
                 'match': b1.lower() == b2.lower() and b1 != '-' and b1 != 'nan'
             })
 
             lt1 = safe_float(item1.get('Lead_Time_Days'))
             lt2 = safe_float(item2.get('Lead_Time_Days'))
             attr_comparison.append({
-                'field': 'Lead Time', 'val1': f"{int(lt1)} hari", 'val2': f"{int(lt2)} hari",
+                'field': 'Lead Time', 'val1': self._wrap_text(f"{int(lt1)} hari"), 'val2': self._wrap_text(f"{int(lt2)} hari"),
                 'match': abs(lt1 - lt2) <= 1
             })
 
@@ -320,7 +338,7 @@ class DuplicateDetector:
                 sv1 = safe_str(specs1.get(k))
                 sv2 = safe_str(specs2.get(k))
                 attr_comparison.append({
-                    'field': str(k).title(), 'val1': sv1, 'val2': sv2,
+                    'field': str(k).title(), 'val1': self._wrap_text(sv1), 'val2': self._wrap_text(sv2),
                     'match': sv1.lower() == sv2.lower() and sv1 != '-'
                 })
 
@@ -404,8 +422,8 @@ class DuplicateDetector:
 
             duplicate_pairs.append({
                 'SKU_1': item1['SKU_ID'],
-                'Desc_1': safe_str(item1.get('Description')),
-                'Full_Desc_1': safe_str(item1.get('description')),
+                'Desc_1': self._wrap_text(safe_str(item1.get('Description'))),
+                'Full_Desc_1': self._wrap_text(safe_str(item1.get('description'))),
                 'Category_1': c1,
                 'Unit_1': u1,
                 'Brand_1': b1,
@@ -417,8 +435,8 @@ class DuplicateDetector:
                 'Image_URL_1': safe_str(item1.get('Image_URL')),
 
                 'SKU_2': item2['SKU_ID'],
-                'Desc_2': safe_str(item2.get('Description')),
-                'Full_Desc_2': safe_str(item2.get('description')),
+                'Desc_2': self._wrap_text(safe_str(item2.get('Description'))),
+                'Full_Desc_2': self._wrap_text(safe_str(item2.get('description'))),
                 'Category_2': c2,
                 'Unit_2': u2,
                 'Brand_2': b2,
@@ -433,7 +451,7 @@ class DuplicateDetector:
                 'Specs_Match_Rate': round(specs_match * 100, 1),
                 'Match_Attributes': f"{total_match}/{total_attrs}",
                 'Matching_Terms': ', '.join(match_fields[:5]) if match_fields else '-',
-                'Mismatch_Fields': ', '.join(mismatch_fields[:3]) if mismatch_fields else '-',
+                'Mismatch_Fields': self._wrap_text(', '.join(mismatch_fields[:3])) if mismatch_fields else '-',
                 'Price_Difference': price_diff_str,
                 'Stock_Comparison': f"{curr1} vs {curr2} unit",
                 'Attr_Comparison': attr_comparison,

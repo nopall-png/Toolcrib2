@@ -1,0 +1,1092 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Insights — Duplicate SKU & Critical Spares | PTMI Toolcrib</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap">
+<style>
+  :root {
+    --bg: #F7F8FC;
+    --surface: #FFFFFF;
+    --surface-alt: #F0F2FA;
+    --fg: #1A1D2E;
+    --fg-muted: #6B7280;
+    --fg-subtle: #9CA3AF;
+    --border: #E5E7EB;
+    --accent: #4F46E5;
+    --accent-light: #EEF2FF;
+    --accent-dark: #3730A3;
+    --emerald: #059669;
+    --emerald-light: #ECFDF5;
+    --amber: #D97706;
+    --amber-light: #FFFBEB;
+    --red: #DC2626;
+    --red-light: #FEF2F2;
+    --slate-600: #475569;
+    --radius: 14px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.05);
+    --shadow-lg: 0 4px 24px rgba(0,0,0,0.10);
+    --font-display: 'Playfair Display', Georgia, serif;
+    --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0F1117;
+      --surface: #1A1D2E;
+      --surface-alt: #23253A;
+      --fg: #F1F3F9;
+      --fg-muted: #9CA3AF;
+      --fg-subtle: #6B7280;
+      --border: #2D3148;
+      --accent-light: #1E2245;
+      --emerald-light: #0D2B22;
+      --amber-light: #2D2006;
+      --red-light: #2D1111;
+      --shadow: 0 1px 3px rgba(0,0,0,0.3), 0 4px 16px rgba(0,0,0,0.2);
+      --shadow-lg: 0 4px 24px rgba(0,0,0,0.4);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0F1117;
+    --surface: #1A1D2E;
+    --surface-alt: #23253A;
+    --fg: #F1F3F9;
+    --fg-muted: #9CA3AF;
+    --fg-subtle: #6B7280;
+    --border: #2D3148;
+    --accent-light: #1E2245;
+    --emerald-light: #0D2B22;
+    --amber-light: #2D2006;
+    --red-light: #2D1111;
+    --shadow: 0 1px 3px rgba(0,0,0,0.3), 0 4px 16px rgba(0,0,0,0.2);
+    --shadow-lg: 0 4px 24px rgba(0,0,0,0.4);
+    color-scheme: dark;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { height: 100%; }
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--fg);
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    overflow: hidden;
+  }
+
+  /* Slide container */
+  .deck {
+    width: 100%;
+    max-width: 1100px;
+    position: relative;
+  }
+
+  /* Individual slide */
+  .slide {
+    display: none;
+    background: var(--surface);
+    border-radius: 20px;
+    padding: 52px 60px;
+    box-shadow: var(--shadow-lg);
+    min-height: 580px;
+    flex-direction: column;
+    gap: 28px;
+    animation: slideIn 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    position: relative;
+    overflow: hidden;
+  }
+  .slide.active { display: flex; }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(16px) scale(0.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  /* Decorative bg shapes */
+  .slide::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 220px; height: 220px;
+    border-radius: 50%;
+    background: var(--accent-light);
+    z-index: 0;
+    pointer-events: none;
+  }
+  .slide::after {
+    content: '';
+    position: absolute;
+    bottom: -40px; left: -20px;
+    width: 140px; height: 140px;
+    border-radius: 50%;
+    background: var(--surface-alt);
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  [data-theme="dark"] .slide::before { opacity: 0.5; }
+  [data-theme="dark"] .slide::after { opacity: 0.3; }
+
+  .slide > * { position: relative; z-index: 1; }
+
+  /* Slide types */
+  .slide-cover { justify-content: center; align-items: flex-start; }
+  .slide-content { gap: 24px; }
+  .slide-section { justify-content: center; align-items: center; text-align: center; }
+
+  /* Typography */
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: var(--accent-light);
+    padding: 5px 12px;
+    border-radius: 100px;
+  }
+  .slide-cover .eyebrow { font-size: 12px; }
+
+  h1 {
+    font-family: var(--font-display);
+    font-size: clamp(32px, 5vw, 52px);
+    font-weight: 800;
+    line-height: 1.1;
+    color: var(--fg);
+    letter-spacing: -0.02em;
+  }
+  h2 {
+    font-family: var(--font-display);
+    font-size: clamp(24px, 3.5vw, 36px);
+    font-weight: 800;
+    line-height: 1.15;
+    color: var(--fg);
+    letter-spacing: -0.015em;
+  }
+  h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--fg);
+    line-height: 1.4;
+  }
+  .subtitle {
+    font-size: 17px;
+    color: var(--fg-muted);
+    line-height: 1.6;
+    max-width: 580px;
+  }
+  .big-number {
+    font-family: var(--font-display);
+    font-size: clamp(48px, 8vw, 80px);
+    font-weight: 800;
+    color: var(--accent);
+    line-height: 1;
+  }
+  .section-title {
+    font-size: clamp(28px, 5vw, 44px);
+    font-weight: 800;
+    color: var(--fg);
+    line-height: 1.1;
+  }
+  .section-sub {
+    font-size: 18px;
+    color: var(--fg-muted);
+    margin-top: 10px;
+  }
+
+  /* Divider */
+  .rule {
+    height: 1px;
+    background: var(--border);
+    width: 100%;
+  }
+
+  /* Grid layouts */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+
+  /* Cards */
+  .card {
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .card-accent {
+    background: var(--accent-light);
+    border-color: transparent;
+  }
+  .card-emerald { background: var(--emerald-light); border-color: transparent; }
+  .card-amber { background: var(--amber-light); border-color: transparent; }
+  .card-red { background: var(--red-light); border-color: transparent; }
+
+  .card-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    margin-bottom: 4px;
+  }
+  .icon-purple { background: #EEF2FF; color: #4F46E5; }
+  .icon-emerald { background: #ECFDF5; color: #059669; }
+  .icon-amber { background: #FFFBEB; color: #D97706; }
+  .icon-red { background: #FEF2F2; color: #DC2626; }
+  .icon-slate { background: var(--surface-alt); color: var(--fg-muted); }
+
+  .card h3 { font-size: 15px; }
+  .card p { font-size: 13px; color: var(--fg-muted); line-height: 1.5; }
+  .card .stat {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--fg);
+    line-height: 1;
+  }
+  .card .stat-label { font-size: 11px; color: var(--fg-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+
+  /* Action badges */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+  }
+  .badge-merge { background: #F3E8FF; color: #7C3AED; }
+  .badge-sub { background: #D1FAE5; color: #059669; }
+  .badge-keep { background: #F1F5F9; color: #475569; }
+  .badge-review { background: #FEF3C7; color: #D97706; }
+
+  /* Tag */
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .tag-critical { background: #FEE2E2; color: #DC2626; }
+  .tag-important { background: #FEF9C3; color: #A16207; }
+  .tag-standard { background: #E0E7FF; color: #4338CA; }
+
+  /* Table */
+  .comparison-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .comparison-table th {
+    background: var(--surface-alt);
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 700;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--fg-muted);
+    border-bottom: 1px solid var(--border);
+  }
+  .comparison-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  .comparison-table tr:last-child td { border-bottom: none; }
+  .comparison-table .val { font-weight: 600; }
+  .comparison-table .label { color: var(--fg-muted); font-size: 11px; }
+
+  /* Process flow */
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .flow-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 8px;
+    padding: 0 12px;
+    min-width: 100px;
+  }
+  .flow-circle {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    font-weight: 800;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+    flex-shrink: 0;
+  }
+  .flow-label { font-size: 12px; font-weight: 600; color: var(--fg); max-width: 90px; }
+  .flow-desc { font-size: 11px; color: var(--fg-muted); max-width: 90px; }
+  .flow-arrow {
+    color: var(--fg-subtle);
+    font-size: 20px;
+    flex-shrink: 0;
+    margin-top: -16px;
+  }
+
+  /* Formula box */
+  .formula-box {
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    text-align: center;
+  }
+  .formula {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: -0.01em;
+    margin-bottom: 6px;
+  }
+  .formula-note { font-size: 12px; color: var(--fg-muted); }
+  .weight { font-size: 12px; color: var(--fg-muted); margin-top: 6px; }
+
+  /* Navigation */
+  .nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 20px;
+    gap: 12px;
+  }
+  .nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--fg);
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    box-shadow: var(--shadow);
+  }
+  .nav-btn:hover { background: var(--accent); color: white; border-color: var(--accent); }
+  .nav-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .nav-btn:disabled:hover { background: var(--surface); color: var(--fg); border-color: var(--border); }
+
+  .slide-counter {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--fg-muted);
+    white-space: nowrap;
+  }
+
+  .dot-nav {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--border);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .dot.active { background: var(--accent); width: 20px; border-radius: 3px; }
+
+  /* Benefit row */
+  .benefit-item {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .benefit-icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: var(--accent-light);
+    color: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  /* Tag line on cover */
+  .cover-meta {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  /* Scrollable area */
+  .scroll-area {
+    overflow-y: auto;
+    max-height: 340px;
+    padding-right: 4px;
+  }
+  .scroll-area::-webkit-scrollbar { width: 4px; }
+  .scroll-area::-webkit-scrollbar-track { background: var(--surface-alt); border-radius: 2px; }
+  .scroll-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* List */
+  ul { list-style: none; }
+  li { position: relative; padding-left: 18px; font-size: 14px; color: var(--fg-muted); line-height: 1.6; }
+  li::before { content: '→'; position: absolute; left: 0; color: var(--accent); font-weight: 700; }
+
+  /* Responsive */
+  @media (max-width: 640px) {
+    .slide { padding: 32px 24px; min-height: auto; border-radius: 16px; }
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    .flow { flex-direction: column; gap: 8px; }
+    .flow-arrow { transform: rotate(90deg); margin-top: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="deck" id="deck">
+
+  <!-- ======================== SLIDE 1: COVER ======================== -->
+  <div class="slide slide-cover active" id="s1">
+    <div class="eyebrow">PTMI Toolcrib · AI Insights Module</div>
+    <h1>Duplicate SKU &amp;<br>Critical Spares</h1>
+    <p class="subtitle">Deteksi barang ganda dan klasifikasi critical spare parts secara otomatis menggunakan AI — supaya toolcrib PT Mattel selalu ter-control dan production tidak pernah berhenti.</p>
+    <div class="cover-meta" style="margin-top:4px;">
+      <span class="tag tag-critical">AI-Powered</span>
+      <span class="tag tag-standard">NLP Semantic</span>
+      <span class="tag tag-important">Predictive Scoring</span>
+    </div>
+    <div style="margin-top:auto; display:flex; gap:12px; flex-wrap:wrap;">
+      <div class="card" style="flex:1; min-width:140px;">
+        <div class="card-icon icon-purple">🔍</div>
+        <div class="stat">3-Step</div>
+        <div class="stat-label">Detection Process</div>
+      </div>
+      <div class="card" style="flex:1; min-width:140px;">
+        <div class="card-icon icon-emerald">⚡</div>
+        <div class="stat">4 Aksi</div>
+        <div class="stat-label">Rekomendasi AI</div>
+      </div>
+      <div class="card" style="flex:1; min-width:140px;">
+        <div class="card-icon icon-amber">📊</div>
+        <div class="stat">3 Kelas</div>
+        <div class="stat-label">Kritikalitas</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== SLIDE 2: AGENDA ======================== -->
+  <div class="slide slide-content" id="s2">
+    <div class="eyebrow">Agenda</div>
+    <h2>Yang akan kita bahas hari ini</h2>
+    <div class="rule"></div>
+    <div class="grid-2" style="gap:20px;">
+      <div class="card card-accent" style="gap:14px; padding:24px;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div class="card-icon icon-purple" style="width:44px; height:44px; font-size:22px;">🔁</div>
+          <div>
+            <h3 style="font-size:17px;">Duplicate SKU Detection</h3>
+            <p style="font-size:12px; margin-top:2px;">NLP Semantik · Cosine Similarity</p>
+          </div>
+        </div>
+        <ul style="margin-top:4px;">
+          <li>Kenapa barang duplikat jadi masalah?</li>
+          <li>Bagaimana AI mendeteksi kemiripan?</li>
+          <li>4 tipe aksi rekomendasi untuk staff</li>
+          <li>Fitur: Cari substitusi otomatis</li>
+        </ul>
+      </div>
+      <div class="card card-emerald" style="gap:14px; padding:24px;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div class="card-icon icon-emerald" style="width:44px; height:44px; font-size:22px;">🚨</div>
+          <div>
+            <h3 style="font-size:17px;">Critical Spares Classification</h3>
+            <p style="font-size:12px; margin-top:2px;">Composite Scoring · ABC Machine</p>
+          </div>
+        </div>
+        <ul style="margin-top:4px;">
+          <li>Kenapa critical spares penting?</li>
+          <li>Rumus Composite Score Explained</li>
+          <li>3 kelas kritikalitas (CRITICAL / IMPORTANT / STANDARD)</li>
+          <li>Action plan: apa yang harus staff lakukan</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card" style="background:var(--accent-light); border-color:transparent; padding:16px 20px;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span style="font-size:20px;">💡</span>
+        <p style="font-size:13px; color:var(--accent-dark); font-weight:600; line-height:1.5;">Kedua fitur ini berjalan otomatis setiap kali data di-sync. Staff toolcrib langsung dapat insight —<br>tanpa perlu analisis manual.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== SLIDE 3: MASALAH DUPLIKAT ======================== -->
+  <div class="slide slide-content" id="s3">
+    <div class="eyebrow">Duplicate SKU · Problem Statement</div>
+    <h2>Kenapa barang duplikat<br>menjadi masalah?</h2>
+    <div class="rule"></div>
+    <div class="grid-3">
+      <div class="card card-red">
+        <div class="card-icon icon-red">💸</div>
+        <h3>Budget Terbuang</h3>
+        <p>Item yang sama dipesan dua kali — anggaran procurement tidak efisien.</p>
+      </div>
+      <div class="card card-amber">
+        <div class="card-icon icon-amber">📦</div>
+        <h3>Stok Menumpuk</h3>
+        <p>Warehouse penuh dengan barang yang sama tapi terdaftar sebagai item berbeda.</p>
+      </div>
+      <div class="card card-accent">
+        <div class="card-icon icon-purple">📋</div>
+        <h3>Data Master Berantakan</h3>
+        <p>Report tidak akurat karena satu item muncul berkali-kali dengan nama berbeda.</p>
+      </div>
+    </div>
+    <div class="card" style="background:var(--surface-alt); border-color:var(--border);">
+      <h3 style="margin-bottom:8px;">Contoh di Dunia Nyata</h3>
+      <div class="comparison-table">
+        <table>
+          <thead><tr><th>SKU</th><th>Deskripsi</th><th>Stok</th><th>Masalah</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="val">WR-001</span></td>
+              <td>Wrench Set 8-19mm Chrome Vanadium</td>
+              <td><span class="val">3 unit</span></td>
+              <td><span class="badge badge-merge">DUPLIKAT</span></td>
+            </tr>
+            <tr>
+              <td><span class="val">WR-002</span></td>
+              <td>Wrench Combination 8-19mm CV Steel</td>
+              <td><span class="val">2 unit</span></td>
+              <td><span style="font-size:12px; color:var(--fg-muted);">Sama persistence</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="font-size:12px; color:var(--fg-muted); margin-top:10px;">Tanpa AI → staff tidak sadar dua item ini adalah hal yang sama. Dengan AI → langsung terdeteksi dan ditandai.</p>
+    </div>
+  </div>
+
+  <!-- ======================== SLIDE 4: CARA KERJA DUPLICATE ======================== -->
+  <div class="slide slide-content" id="s4">
+    <div class="eyebrow">Duplicate SKU · How It Works</div>
+    <h2>3 Tahap Deteksi<br>Kemiripan Barang</h2>
+    <div class="rule"></div>
+    <div class="flow" style="margin-bottom:8px;">
+      <div class="flow-step">
+        <div class="flow-circle">1</div>
+        <div class="flow-label">Rich Description Build</div>
+        <div class="flow-desc">Gabung nama + kategori + specs jadi satu teks</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="flow-circle">2</div>
+        <div class="flow-label">NLP Embedding</div>
+        <div class="flow-desc">Konversi teks ke vektor angka (model multibahasa)</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="flow-circle">3</div>
+        <div class="flow-label">Cosine Similarity</div>
+        <div class="flow-desc">Bandingkan semua pasangan SKU, hitung skor</div>
+      </div>
+    </div>
+    <div class="grid-2" style="gap:16px;">
+      <div class="card" style="padding:20px;">
+        <h3 style="margin-bottom:10px;">📝 Rich Description</h3>
+        <div style="background:var(--surface-alt); border-radius:8px; padding:12px; font-size:12px; color:var(--fg-muted); line-height:1.7;">
+          "Wrench Set 8-19mm. Kategori: Hand Tools. Spesifikasi: Material: Chrome Vanadium, Finish: Mirror, Size Range: 8-19mm. Merek: Pro-Ikit."
+        </div>
+        <p style="font-size:11px; color:var(--fg-subtle); margin-top:8px;">Nama produk + kategori + spesifikasi teknis digabung jadi satu teks kaya sebelum di-encode.</p>
+      </div>
+      <div class="card" style="padding:20px;">
+        <h3 style="margin-bottom:10px;">🧠 Model NLP yang Dipakai</h3>
+        <div style="font-size:14px; font-weight:700; color:var(--accent); margin-bottom:8px;">paraphrase-multilingual-MiniLM-L12-v2</div>
+        <ul>
+          <li>Model multibahasa — bisa Indonesia, Inggris, dll.</li>
+          <li>Dilatih khusus untuk kemiripan semantik kalimat.</li>
+          <li>Di-cache: encoding ulang hanya untuk data baru.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== SLIDE 5: AKSI REKOMENDASI ======================== -->
+  <div class="slide slide-content" id="s5">
+    <div class="eyebrow">Duplicate SKU · AI Recommendations</div>
+    <h2>4 Tipe Aksi untuk Staff</h2>
+    <div class="rule"></div>
+    <div class="grid-2">
+      <div class="card card-accent">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+          <span class="badge badge-merge">MERGE</span>
+          <span style="font-size:11px; color:var(--fg-muted);">Similarity ≥ 85%, specs cocok</span>
+        </div>
+        <h3 style="margin-bottom:6px;">Gabungkan Kedua Item</h3>
+        <p>Dua item adalah duplikat fisik. Staff cek gudang → gabungkan stok ke satu SKU → hapus SKU duplikat dari master.</p>
+        <div style="margin-top:8px; background:#F3E8FF; border-radius:6px; padding:8px; font-size:12px; color:#7C3AED;">
+          ⚠️ Khusus untuk item yang sama-sama kosong atau redundan.
+        </div>
+      </div>
+      <div class="card card-emerald">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+          <span class="badge badge-sub">SUBSTITUTE</span>
+          <span style="font-size:11px; color:var(--fg-muted);">Item kosong + ada pengganti</span>
+        </div>
+        <h3 style="margin-bottom:6px;">Gunakan Item Pengganti</h3>
+        <p>Item A kosong tapi item B mirip dan tersedia. Staff bisa langsung gunakan item B sebagai pengganti sementara — tanpa perlu pesan baru.</p>
+        <div style="margin-top:8px; background:#ECFDF5; border-radius:6px; padding:8px; font-size:12px; color:#059669;">
+          ⭐ Paling sering terjadi di production floor.
+        </div>
+      </div>
+      <div class="card card-slate" style="background:var(--surface-alt);">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+          <span class="badge badge-keep">KEEP SEPARATE</span>
+          <span style="font-size:11px; color:var(--fg-muted);">Specs kritis beda / keduanya ada stok</span>
+        </div>
+        <h3 style="margin-bottom:6px;">Simpan Sebagai Item Berbeda</h3>
+        <p>Item mirip tapi secara teknis berbeda (misal: ukuran beda signifikan). AI merekomendasikan untuk TIDAK digabungkan.</p>
+        <div style="margin-top:8px; background:var(--surface-alt); border:1px solid var(--border); border-radius:6px; padding:8px; font-size:12px; color:var(--fg-muted);">
+          ✅ Keputusan aman — simpan terpisah, tidak ada yang berubah.
+        </div>
+      </div>
+      <div class="card card-amber">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+          <span class="badge badge-review">REVIEW</span>
+          <span style="font-size:11px; color:var(--fg-muted);">Similarity rendah atau ambigu</span>
+        </div>
+        <h3 style="margin-bottom:6px;">Review Manual oleh Staff</h3>
+        <p>AI belum yakin. Staff harus cek langsung ke gudang untuk menentukan apakah item benar-benar duplikat atau bukan.</p>
+        <div style="margin-top:8px; background:#FEF3C7; border-radius:6px; padding:8px; font-size:12px; color:#D97706;">
+          👀 AI memberi info, keputusan akhir tetap di tangan staff.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== SLIDE 6: SUBSTITUSI ======================== -->
+  <div class="slide slide-content" id="s6">
+    <div class="eyebrow">Duplicate SKU · Substitute Finder</div>
+    <h2>Cari Substitusi Otomatis</h2>
+    <div class="rule"></div>
+    <div class="card" style="background:var(--emerald-light); border-color:transparent; padding:20px;">
+      <div style="display:flex; gap:12px; align-items:flex-start;">
+        <span style="font-size:24px; flex-shrink:0;">🔎</span>
+        <div>
+          <h3 style="margin-bottom:6px;">Staff input SKU → AI cari kandidat pengganti</h3>
+          <p style="font-size:13px; color:var(--emerald);">Staff tinggal ketik SKU item yang kosong. Dalam hitungan detik, AI menampilkan daftar kandidat pengganti yang tersedia di gudang — lengkap dengan similarity score, stok, harga, dan lead time.</p>
+        </div>
+      </div>
+    </div>
+    <div class="comparison-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Yang Diperhitungkan AI</th>
+            <th>Hasil</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="label">Input</span></td>
+            <td>SKU target yang kosong</td>
+            <td>1 SKU spesifik</td>
+          </tr>
+          <tr>
+            <td><span class="label">Kemiripan</span></td>
+            <td>Nama + spesifikasi teknis</td>
+            <td>Cosine similarity ≥ 40%</td>
+          </tr>
+          <tr>
+            <td><span class="label">Ketersediaan</span></td>
+            <td>Stok gudang saat ini</td>
+            <td>Stok > 0 units</td>
+          </tr>
+          <tr>
+            <td><span class="label">Output</span></td>
+            <td>Daftar kandidat + ranking</td>
+            <td>3 level: Direkomendasikan / Pertimbangkan / Penggantian Terakhir</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <div class="card" style="flex:1; min-width:130px; padding:14px;">
+        <div style="font-size:11px; font-weight:700; color:#059669; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px;">⭐ Strongly Recommended</div>
+        <p style="font-size:12px;">Similarity ≥ 85%, specs match ≥ 70%, stok tersedia</p>
+      </div>
+      <div class="card" style="flex:1; min-width:130px; padding:14px;">
+        <div style="font-size:11px; font-weight:700; color:#2563EB; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px;">💡 Consider</div>
+        <p style="font-size:12px;">Similarity ≥ 60%, specs cukup cocok</p>
+      </div>
+      <div class="card" style="flex:1; min-width:130px; padding:14px;">
+        <div style="font-size:11px; font-weight:700; color:#9CA3AF; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px;">⚠️ Last Resort</div>
+        <p style="font-size:12px;">Similarity ≥ 40%, hanya jika tidak ada opsi lain</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== SLIDE 7: SECTION DIVIDER ======================== -->
+  <div class="slide slide-section" id="s7">
+    <div style="display:flex; flex-direction:column; align-items:center; gap:16px;">
+      <div class="eyebrow" style="background:var(--emerald-light); color:var(--emerald);">Fitur Kedua</div>
+      <div class="section-title">Critical Spares<br>Classification</div>
+      <p class="section-sub">Identifikasi spare parts mana yang<br>jika kosong bisa halt mesin produksi.</p>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:8px;">
+        <div class="card" style="padding:12px 18px; gap:4px; text-align:center;">
+          <div style="font-size:22px;">🚨</div>
+          <div class="stat-label">CRITICAL</div>
+        </div>
+        <div class="card" style="padding:12px 18px; gap:4px; text-align:center;">
+          <div style="font-size:22px;">⚡</div>
+          <div class="stat-label">IMPORTANT</div>
+        </div>
+        <div class="card" style="padding:12px 18px; gap:4px; text-align:center;">
+          <div style="font-size:22px;">📦</div>
+          <div class="stat-label">STANDARD</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== SLIDE 8: CRITICAL SPARES ======================== -->
+  <div class="slide slide-content" id="s8">
+    <div class="eyebrow">Critical Spares · Problem</div>
+    <h2>Kenapa Critical Spares<br>Harus Diprioritaskan?</h2>
+    <div class="rule"></div>
+    <div class="grid-2" style="gap:20px;">
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <div class="card card-red">
+          <div class="card-icon icon-red">⏱️</div>
+          <h3>Machine Downtime Cost</h3>
+          <p>Setiap jam mesin berhenti = produksi tertunda. Critical spare yang tidak ada = downtime berkali-kali lipat lebih lama.</p>
+        </div>
+        <div class="card card-amber">
+          <div class="card-icon icon-amber">📈</div>
+          <h3>Lead Time Panjang</h3>
+          <p>Beberapa spare parts butuh waktu berminggu-minggu dari supplier. Tanpa buffer, mesin idle sampai parts datang.</p>
+        </div>
+        <div class="card card-accent">
+          <div class="card-icon icon-purple">🔄</div>
+          <h3>Frekuensi Pemakaian Tinggi</h3>
+          <p>Item yang sering dipakai habis lebih cepat. Tanpa monitoring → sering kehabisan di saat kritis.</p>
+        </div>
+      </div>
+      <div class="card" style="background:var(--surface-alt); border-color:var(--border); padding:24px; justify-content:center;">
+        <h3 style="margin-bottom:14px;">Pertanyaan Kunci untuk Setiap Spare Part:</h3>
+        <ul style="display:flex; flex-direction:column; gap:10px;">
+          <li style="padding-left:0; padding-top:6px; border-top:1px solid var(--border);">
+            <span style="font-size:16px;">1️⃣</span>
+            <span style="font-weight:600; color:var(--fg); font-size:13px;"> Berapa sering item ini diminta?</span>
+          </li>
+          <li style="padding-left:0; padding-top:6px; border-top:1px solid var(--border);">
+            <span style="font-size:16px;">2️⃣</span>
+            <span style="font-weight:600; color:var(--fg); font-size:13px;"> Berapa lama kalau beli ulang dari supplier?</span>
+          </li>
+          <li style="padding-left:0; padding-top:6px; border-top:1px solid var(--border);">
+            <span style="font-size:16px;">3️⃣</span>
+            <span style="font-weight:600; color:var(--fg); font-size:13px;"> Mesin apa yang bergantung ke item ini?</span>
+          </li>
+          <li style="padding-left:0; padding-top:6px; border-top:1px solid var(--border); border-bottom:1px solid var(--border);">
+            <span style="font-size:16px;">4️⃣</span>
+            <span style="font-weight:600; color:var(--fg); font-size:13px;"> Seberapa kritis jika mesin ini berhenti?</span>
+          </li>
+        </ul>
+        <p style="font-size:12px; color:var(--fg-muted); margin-top:12px;">AI menjawab semua pertanyaan ini secara otomatis dari data transaksi dan data mesin.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== SLIDE 9: COMPOSITE SCORE ======================== -->
+  <div class="slide slide-content" id="s9">
+    <div class="eyebrow">Critical Spares · Scoring Model</div>
+    <h2>Rumus Composite Score</h2>
+    <div class="rule"></div>
+    <div class="formula-box" style="margin-bottom:16px;">
+      <div class="formula">Composite Score = (Usage × 0.35) + (Lead Time × 0.25) + (Machine × 0.40)</div>
+      <div class="weight">Bobot: Usage=35% · Lead Time=25% · Machine=40%</div>
+    </div>
+    <div class="grid-3">
+      <div class="card">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+          <h3>Usage Score</h3>
+          <span style="font-size:20px;">📊</span>
+        </div>
+        <div class="stat" style="color:var(--accent); font-size:36px;">35%</div>
+        <div class="stat-label" style="margin-bottom:8px;">dari Composite Score</div>
+        <p>Total quantity issued dari semua transaksi. Item yang sering diminta = score tinggi.</p>
+        <div style="margin-top:10px; background:var(--accent-light); border-radius:6px; padding:8px; font-size:11px; color:var(--accent-dark);">
+          📐 Usage Score = (Total Issued / Max Usage) × 100
+        </div>
+      </div>
+      <div class="card">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+          <h3>Lead Time Score</h3>
+          <span style="font-size:20px;">⏳</span>
+        </div>
+        <div class="stat" style="color:var(--amber); font-size:36px;">25%</div>
+        <div class="stat-label" style="margin-bottom:8px;">dari Composite Score</div>
+        <p>Durasi pengiriman dari supplier. Lead time panjang = score tinggi (butuh restock lebih awal).</p>
+        <div style="margin-top:10px; background:var(--amber-light); border-radius:6px; padding:8px; font-size:11px; color:var(--amber);">
+          📐 LT Score = (Lead Time Days / Max Lead Time) × 100
+        </div>
+      </div>
+      <div class="card">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+          <h3>Machine Score</h3>
+          <span style="font-size:20px;">🏭</span>
+        </div>
+        <div class="stat" style="color:var(--red); font-size:36px;">40%</div>
+        <div class="stat-label" style="margin-bottom:8px;">dari Composite Score — TERBESAR</div>
+        <p>Seberapa penting mesin terkait. Mesin produktif = score tinggi. Mesin kritis 40% karena impact bisnis terbesar.</p>
+        <div style="margin-top:10px; background:var(--red-light); border-radius:6px; padding:8px; font-size:11px; color:var(--red);">
+          🏭 Dari data mesin produktif vs idle per SKU
+        </div>
+      </div>
+    </div>
+    <div class="card" style="background:var(--emerald-light); border-color:transparent; padding:14px 18px;">
+      <p style="font-size:13px; font-weight:600; color:var(--emerald);">💡 Machine Score punya bobot tertinggi (40%) karena impact mesin berhenti terhadap production output adalah yang paling costly untuk PT Mattel.</p>
+    </div>
+  </div>
+
+  <!-- ======================== SLIDE 10: KLASIFIKASI ======================== -->
+  <div class="slide slide-content" id="s10">
+    <div class="eyebrow">Critical Spares · Classification</div>
+    <h2>3 Kelas Kritikalitas</h2>
+    <div class="rule"></div>
+    <div class="comparison-table" style="margin-bottom:16px;">
+      <table>
+        <thead>
+          <tr>
+            <th>Kelas</th>
+            <th>Composite Score</th>
+            <th>Jumlah Item (contoh)</th>
+            <th>Arti</th>
+            <th>Action untuk Staff</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="background:var(--red-light);">
+            <td><span class="tag tag-critical" style="font-size:12px;">🚨 CRITICAL</span></td>
+            <td><span class="val">≥ 70</span></td>
+            <td>Item paling prioritas</td>
+            <td>Wajib selalu ada. Halt mesin kalau kosong.</td>
+            <td style="font-size:12px;">Monitor harian. Jangan biarkan stok di bawah Min Stock.</td>
+          </tr>
+          <tr style="background:var(--amber-light);">
+            <td><span class="tag tag-important" style="font-size:12px;">⚡ IMPORTANT</span></td>
+            <td><span class="val">40 – 69</span></td>
+            <td>Prioritas menengah</td>
+            <td>Penting tapi tidak halt total. Restock segera saat approaching min.</td>
+            <td style="font-size:12px;">Cek mingguan. Pastikan reorder point tercapai.</td>
+          </tr>
+          <tr style="background:#EEF2FF;">
+            <td><span class="tag tag-standard" style="font-size:12px;">📦 STANDARD</span></td>
+            <td><span class="val">&lt; 40</span></td>
+            <td>Item umum</td>
+            <td>Barang standard. Empty stock = inconvenien, bukan krisis.</td>
+            <td style="font-size:12px;">Restock normal sesuai schedule.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="grid-3">
+      <div class="card" style="padding:16px; gap:6px;">
+        <div style="font-size:28px;">🚨</div>
+        <div style="font-size:13px; font-weight:700; color:var(--red);">CRITICAL Items</div>
+        <p style="font-size:11px;">Cek gudang manual setiap hari. Selalu jaga stok di atas reorder point. Jangan tunggu kosong baru pesan.</p>
+      </div>
+      <div class="card" style="padding:16px; gap:6px;">
+        <div style="font-size:28px;">⚡</div>
+        <div style="font-size:13px; font-weight:700; color:var(--amber);">IMPORTANT Items</div>
+        <p style="font-size:11px;">Cek mingguan. Set alarm reorder point. Persingkat lead time jika memungkinkan.</p>
+      </div>
+      <div class="card" style="padding:16px; gap:6px;">
+        <div style="font-size:28px;">📦</div>
+        <div style="font-size:13px; font-weight:700; color:#4338CA;">STANDARD Items</div>
+        <p style="font-size:11px;">Restock sesuai jadwal reguler. Tidak perlu prioritas khusus.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== SLIDE 11: KESIMPULAN ======================== -->
+  <div class="slide slide-content" id="s11">
+    <div class="eyebrow">Summary</div>
+    <h2>AI Insights: Ringkasan</h2>
+    <div class="rule"></div>
+    <div class="grid-2" style="gap:20px;">
+      <div class="card card-accent" style="padding:24px; gap:14px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div class="card-icon icon-purple" style="width:44px; height:44px; font-size:22px;">🔁</div>
+          <h2 style="font-family:var(--font-display); font-size:22px;">Duplicate SKU</h2>
+        </div>
+        <div class="rule"></div>
+        <div class="benefit-item">
+          <div class="benefit-icon">✓</div>
+          <p style="font-size:13px;">Hindari budget terbuang untuk item yang sama</p>
+        </div>
+        <div class="benefit-item">
+          <div class="benefit-icon">✓</div>
+          <p style="font-size:13px;">Master data toolcrib selalu bersih dan akurat</p>
+        </div>
+        <div class="benefit-item">
+          <div class="benefit-icon">✓</div>
+          <p style="font-size:13px;">Staff dapat keputusan cepat (MERGE / SUBSTITUTE / KEEP / REVIEW)</p>
+        </div>
+        <div class="benefit-item">
+          <div class="benefit-icon">✓</div>
+          <p style="font-size:13px;">Cari pengganti otomatis saat item kosong</p>
+        </div>
+        <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:4px;">
+          <span class="badge badge-merge">MERGE</span>
+          <span class="badge badge-sub">SUBSTITUTE</span>
+          <span class="badge badge-keep">KEEP SEPARATE</span>
+          <span class="badge badge-review">REVIEW</span>
+        </div>
+      </div>
+      <div class="card card-emerald" style="padding:24px; gap:14px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div class="card-icon icon-emerald" style="width:44px; height:44px; font-size:22px;">🚨</div>
+          <h2 style="font-family:var(--font-display); font-size:22px;">Critical Spares</h2>
+        </div>
+        <div class="rule"></div>
+        <div class="benefit-item">
+          <div class="benefit-icon" style="background:var(--emerald-light); color:var(--emerald);">✓</div>
+          <p style="font-size:13px;">Staff tahu persis item mana yang prioritas tinggi</p>
+        </div>
+        <div class="benefit-item">
+          <div class="benefit-icon" style="background:var(--emerald-light); color:var(--emerald);">✓</div>
+          <p style="font-size:13px;">Cegah mesin berhenti karena spare parts tidak ada</p>
+        </div>
+        <div class="benefit-item">
+          <div class="benefit-icon" style="background:var(--emerald-light); color:var(--emerald);">✓</div>
+          <p style="font-size:13px;">Composite Score berdasarkan 3 faktor: Usage, Lead Time, Machine</p>
+        </div>
+        <div class="benefit-item">
+          <div class="benefit-icon" style="background:var(--emerald-light); color:var(--emerald);">✓</div>
+          <p style="font-size:13px;">Klasifikasi otomatis: CRITICAL / IMPORTANT / STANDARD</p>
+        </div>
+        <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:4px;">
+          <span class="tag tag-critical">CRITICAL ≥70</span>
+          <span class="tag tag-important">IMPORTANT 40-69</span>
+          <span class="tag tag-standard">STANDARD &lt;40</span>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="background:var(--accent); border-color:var(--accent); padding:18px 22px;">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span style="font-size:24px;">🚀</span>
+        <div>
+          <h3 style="color:white; margin-bottom:2px;">Efek ke PT Mattel: Production Tidak Pernah Berhenti</h3>
+          <p style="font-size:13px; color:rgba(255,255,255,0.8);">Duplicate SKU → tidak ada pemborosan. Critical Spares → mesin selalu punya buffer. Staff kerja lebih efisien dan tenang.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== SLIDE 12: Q&A ======================== -->
+  <div class="slide slide-section" id="s12">
+    <div class="eyebrow">Questions & Discussion</div>
+    <div style="font-size:clamp(48px, 10vw, 96px); margin: 16px 0;">❓</div>
+    <div class="section-title" style="max-width:500px;">Tanya Jawab</div>
+    <p class="section-sub" style="max-width:460px;">Silakan ajukan pertanyaan tentang Duplicate SKU Detection atau Critical Spares Classification.</p>
+    <div style="margin-top:24px; display:flex; gap:10px; flex-wrap:wrap; justify-content:center;">
+      <div class="card" style="padding:10px 16px; gap:4px; text-align:center; min-width:100px;">
+        <div style="font-size:11px; color:var(--fg-muted); font-weight:600;">PPT File</div>
+        <div style="font-size:12px; font-weight:700; color:var(--fg);">Slide Deck</div>
+      </div>
+      <div class="card" style="padding:10px 16px; gap:4px; text-align:center; min-width:100px;">
+        <div style="font-size:11px; color:var(--fg-muted); font-weight:600;">Live Demo</div>
+        <div style="font-size:12px; font-weight:700; color:var(--fg);">PTMI Toolcrib</div>
+      </div>
+      <div class="card" style="padding:10px 16px; gap:4px; text-align:center; min-width:100px;">
+        <div style="font-size:11px; color:var(--fg-muted); font-weight:600;">Kontak</div>
+        <div style="font-size:12px; font-weight:700; color:var(--fg);">Bootcamp PTMI</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Navigation -->
+<div class="nav" style="width:100%; max-width:1100px;">
+  <button class="nav-btn" id="prevBtn" onclick="prevSlide()" disabled>
+    ← Prev
+  </button>
+  <div class="dot-nav" id="dotNav"></div>
+  <span class="slide-counter" id="counter">1 / 12</span>
+  <button class="nav-btn" id="nextBtn" onclick="nextSlide()">
+    Next →
+  </button>
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let current = 0;
+
+  // Build dots
+  const dotNav = document.getElementById('dotNav');
+  slides.forEach((_, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'dot' + (i === 0 ? ' active' : '');
+    dot.onclick = () => goTo(i);
+    dotNav.appendChild(dot);
+  });
+
+  function update() {
+    slides.forEach((s, i) => s.classList.toggle('active', i === current));
+    document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === current));
+    document.getElementById('counter').textContent = `${current + 1} / ${total}`;
+    document.getElementById('prevBtn').disabled = current === 0;
+    document.getElementById('nextBtn').disabled = current === total - 1;
+  }
+
+  function goTo(n) {
+    current = Math.max(0, Math.min(n, total - 1));
+    update();
+  }
+
+  function nextSlide() { goTo(current + 1); }
+  function prevSlide() { goTo(current - 1); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); nextSlide(); }
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp') { e.preventDefault(); prevSlide(); }
+    if (e.key === 'Home') { e.preventDefault(); goTo(0); }
+    if (e.key === 'End')  { e.preventDefault(); goTo(total - 1); }
+  });
+
+  // Touch swipe
+  let touchStartX = 0;
+  document.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; });
+  document.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) > 50) { dx < 0 ? nextSlide() : prevSlide(); }
+  });
+
+  update();
+</script>
+</body>
+</html>

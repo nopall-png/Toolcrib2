@@ -550,8 +550,8 @@ function DetailPanel({
 
         {/* AI Verdict */}
         {item.verdict && (
-          <div className={`p-4 rounded-xl border text-sm font-medium leading-relaxed ${verdictBg} ${verdictColor} shrink-0`}>
-            <p className="whitespace-pre-wrap break-words">{item.verdict}</p>
+          <div className={`p-4 rounded-xl border text-sm font-medium leading-relaxed ${verdictBg} ${verdictColor} shrink-0 min-w-0 overflow-hidden`}>
+            <p style={{ whiteSpace: 'pre-line' }}>{item.verdict}</p>
           </div>
         )}
 
@@ -565,16 +565,16 @@ function DetailPanel({
         </div>
 
         {/* 2-Column Item Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 shrink-0">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 shrink-0 min-w-0">
           {/* Item 1 */}
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-2">
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-2 min-w-0 overflow-hidden">
             <div className="flex items-center justify-between min-w-0">
               <span className="font-bold text-slate-800 text-base truncate">{item.sku1}</span>
               <StockBadge status={item.stockStatus1} stock={item.stock1} />
             </div>
-            <p className="text-sm font-semibold text-slate-700 leading-snug break-words">{item.desc1}</p>
+            <p className="text-sm font-semibold text-slate-700 leading-snug min-w-0" style={{ whiteSpace: 'pre-line' }}>{item.desc1}</p>
             {item.fullDesc1 && item.fullDesc1 !== item.desc1 && (
-              <p className="text-xs text-slate-500 italic leading-snug break-words">{item.fullDesc1}</p>
+              <p className="text-xs text-slate-500 italic leading-snug min-w-0" style={{ whiteSpace: 'pre-line' }}>{item.fullDesc1}</p>
             )}
             <div className="space-y-1 pt-1 border-t border-blue-200/50">
               {[
@@ -586,21 +586,21 @@ function DetailPanel({
               ].map(([label, val]) => (
                 <div key={label} className="flex items-start gap-2 text-xs min-w-0">
                   <span className="text-slate-500 font-medium shrink-0 w-16">{label}:</span>
-                  <span className="text-slate-700 font-semibold leading-snug break-words flex-1 min-w-0">{val}</span>
+                  <span className="text-slate-700 font-semibold flex-1 min-w-0" style={{ whiteSpace: 'pre-line' }}>{val}</span>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Item 2 */}
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2">
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2 min-w-0 overflow-hidden">
             <div className="flex items-center justify-between min-w-0">
               <span className="font-bold text-slate-800 text-base truncate">{item.sku2}</span>
               <StockBadge status={item.stockStatus2} stock={item.stock2} />
             </div>
-            <p className="text-sm font-semibold text-slate-700 leading-snug break-words">{item.desc2}</p>
+            <p className="text-sm font-semibold text-slate-700 leading-snug min-w-0" style={{ whiteSpace: 'pre-line' }}>{item.desc2}</p>
             {item.fullDesc2 && item.fullDesc2 !== item.desc2 && (
-              <p className="text-xs text-slate-500 italic leading-snug break-words">{item.fullDesc2}</p>
+              <p className="text-xs text-slate-500 italic leading-snug min-w-0" style={{ whiteSpace: 'pre-line' }}>{item.fullDesc2}</p>
             )}
             <div className="space-y-1 pt-1 border-t border-amber-200/50">
               {[
@@ -612,7 +612,7 @@ function DetailPanel({
               ].map(([label, val]) => (
                 <div key={label} className="flex items-start gap-2 text-xs min-w-0">
                   <span className="text-slate-500 font-medium shrink-0 w-16">{label}:</span>
-                  <span className="text-slate-700 font-semibold leading-snug break-words flex-1 min-w-0">{val}</span>
+                  <span className="text-slate-700 font-semibold flex-1 min-w-0" style={{ whiteSpace: 'pre-line' }}>{val}</span>
                 </div>
               ))}
             </div>
@@ -620,14 +620,14 @@ function DetailPanel({
         </div>
 
         {/* Price & Stock Comparison */}
-        <div className="grid grid-cols-3 gap-2 shrink-0">
-          <div className="bg-slate-50 border border-slate-200 rounded-lg p-2 text-center">
+        <div className="grid grid-cols-3 gap-2 shrink-0 min-w-0">
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-2 text-center overflow-hidden">
             <div className="text-[10px] text-slate-500 font-medium">Selisih Harga</div>
-            <div className="text-xs font-bold text-slate-800 leading-snug break-words">{item.priceDifference}</div>
+            <div className="text-xs font-bold text-slate-800 leading-snug min-w-0" style={{ whiteSpace: 'pre-line' }}>{item.priceDifference}</div>
           </div>
-          <div className="bg-slate-50 border border-slate-200 rounded-lg p-2 text-center">
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-2 text-center overflow-hidden">
             <div className="text-[10px] text-slate-500 font-medium">Perbandingan Stok</div>
-            <div className="text-xs font-bold text-slate-800">{item.stockComparison}</div>
+            <div className="text-xs font-bold text-slate-800 min-w-0" style={{ whiteSpace: 'pre-line' }}>{item.stockComparison}</div>
           </div>
           <div className="bg-slate-50 border border-slate-200 rounded-lg p-2 text-center">
             <div className="text-[10px] text-slate-500 font-medium">Specs Match</div>
@@ -639,23 +639,33 @@ function DetailPanel({
         {item.attrComparison.length > 0 && (
           <div className="shrink-0">
             <p className="text-xs font-bold text-slate-600 mb-2">Perbandingan Atribut</p>
-            <div className="border border-slate-200 rounded-xl overflow-hidden">
-              <table className="w-full text-xs">
+            <div className="border border-slate-200 rounded-xl overflow-x-auto min-w-0">
+              <table className="w-full text-xs" style={{ tableLayout: 'fixed', minWidth: '480px' }}>
+                <colgroup>
+                  <col style={{ width: '80px' }} />
+                  <col style={{ width: '180px' }} />
+                  <col style={{ width: '180px' }} />
+                  <col style={{ width: '48px' }} />
+                </colgroup>
                 <thead className="bg-slate-100">
                   <tr>
-                    <th className="p-2 text-left font-bold text-slate-600 w-20 shrink-0">Atribut</th>
-                    <th className="p-2 text-left font-bold text-blue-600 min-w-0 break-words">{item.sku1}</th>
-                    <th className="p-2 text-left font-bold text-amber-600 min-w-0 break-words">{item.sku2}</th>
-                    <th className="p-2 text-center font-bold text-slate-600 w-10 shrink-0">Match</th>
+                    <th className="p-2 text-left font-bold text-slate-600">Atribut</th>
+                    <th className="p-2 text-left font-bold text-blue-600">{item.sku1}</th>
+                    <th className="p-2 text-left font-bold text-amber-600">{item.sku2}</th>
+                    <th className="p-2 text-center font-bold text-slate-600">Match</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {item.attrComparison.map((attr, ai) => (
                     <tr key={ai} className={attr.match ? 'bg-emerald-50/30' : 'bg-red-50/30'}>
-                      <td className="p-2 font-semibold text-slate-700 shrink-0">{attr.field}</td>
-                      <td className="p-2 text-slate-600 leading-snug break-words min-w-0">{attr.val1}</td>
-                      <td className="p-2 text-slate-600 leading-snug break-words min-w-0">{attr.val2}</td>
-                      <td className="p-2 text-center shrink-0">{attr.match ? '✅' : '❌'}</td>
+                      <td className="p-2 font-semibold text-slate-700 align-top">{attr.field}</td>
+                      <td className="p-2 text-slate-600 align-top" style={{ whiteSpace: 'pre-line', wordBreak: 'break-word', overflowWrap: 'break-word' }}>
+                        {attr.val1}
+                      </td>
+                      <td className="p-2 text-slate-600 align-top" style={{ whiteSpace: 'pre-line', wordBreak: 'break-word', overflowWrap: 'break-word' }}>
+                        {attr.val2}
+                      </td>
+                      <td className="p-2 text-center align-top">{attr.match ? '✅' : '❌'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -666,9 +676,9 @@ function DetailPanel({
 
         {/* Mismatch Fields */}
         {item.mismatchFields && item.mismatchFields !== '-' && (
-          <div className="text-xs text-slate-500 leading-snug break-words shrink-0">
+          <div className="text-xs text-slate-500 leading-snug shrink-0 min-w-0 overflow-hidden">
             <span className="font-semibold">Perbedaan ditemukan: </span>
-            <span>{item.mismatchFields}</span>
+            <span style={{ whiteSpace: 'pre-line' }}>{item.mismatchFields}</span>
           </div>
         )}
       </div>
