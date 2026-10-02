@@ -270,7 +270,17 @@ def get_duplicate_pair_detail(sku1: str, sku2: str, threshold: float = 0.40):
             raise HTTPException(status_code=404, detail="Pair not found")
             
         pair_dict = pair.iloc[0].to_dict()
-        pair_dict = {k: (None if pd.isna(v) else v) for k, v in pair_dict.items()}
+        
+        def sanitize_dict(d):
+            if isinstance(d, dict):
+                return {k: sanitize_dict(v) for k, v in d.items()}
+            elif isinstance(d, list):
+                return [sanitize_dict(v) for v in d]
+            elif pd.isna(d) if not isinstance(d, (list, dict)) else False:
+                return None
+            return d
+            
+        pair_dict = sanitize_dict(pair_dict)
         
         return {
             "status": "success",
@@ -304,7 +314,7 @@ def get_substitutes(sku_id: str, threshold: float = 0.40):
                 return {k: sanitize_dict(v) for k, v in d.items()}
             elif isinstance(d, list):
                 return [sanitize_dict(v) for v in d]
-            elif pd.isna(d):
+            elif pd.isna(d) if not isinstance(d, (list, dict)) else False:
                 return None
             return d
             
